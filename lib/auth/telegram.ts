@@ -34,7 +34,12 @@ export function verifyTelegramWebAppData(
 
     console.log("🔐 Using Telegram hash verification");
 
-    return verifyHash(initDataString, data.hash, botToken, userData);
+    return verifyHash(
+      initDataString,
+      data.hash,
+      botToken,
+      userData
+    );
 
   } catch (error) {
     console.error("❌ Telegram verification error:", error);
@@ -42,62 +47,95 @@ export function verifyTelegramWebAppData(
   }
 }
 
+
 function verifyHash(
   initDataString: string,
   receivedHash: string,
   botToken: string,
   userData?: any
 ): TelegramUser | null {
+
   try {
+
     const params = new URLSearchParams(initDataString);
 
+    // Remove fields that Telegram does not include in hash calculation
     params.delete("hash");
+    params.delete("signature");
+
 
     const dataCheckString = Array.from(params.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}=${value}`)
       .join("\n");
 
+
     console.log("========== DATA CHECK STRING ==========");
     console.log(dataCheckString);
     console.log("======================================");
 
+
     const secretKey = crypto
-      .createHmac("sha256", "WebAppData")
+      .createHmac(
+        "sha256",
+        "WebAppData"
+      )
       .update(botToken)
       .digest();
 
+
     const calculatedHash = crypto
-      .createHmac("sha256", secretKey)
+      .createHmac(
+        "sha256",
+        secretKey
+      )
       .update(dataCheckString)
       .digest("hex");
+
 
     console.log("🔐 Hash comparison:");
     console.log("Expected:", receivedHash);
     console.log("Generated:", calculatedHash);
+
 
     if (calculatedHash !== receivedHash) {
       console.log("❌ Telegram hash mismatch");
       return null;
     }
 
+
     console.log("✅ Telegram hash verification successful");
 
-    const authDate = Number(params.get("auth_date") || 0);
-    const now = Math.floor(Date.now() / 1000);
+
+    const authDate = Number(
+      params.get("auth_date") || 0
+    );
+
+
+    const now = Math.floor(
+      Date.now() / 1000
+    );
+
 
     console.log("========== TIME CHECK ==========");
     console.log("Telegram auth_date:", authDate);
-    console.log("Telegram date:", new Date(authDate * 1000).toISOString());
     console.log("Server timestamp:", now);
-    console.log("Server date:", new Date(now * 1000).toISOString());
-    console.log("Difference (seconds):", now - authDate);
+    console.log("Difference:", now - authDate);
     console.log("===============================");
 
+
+    // Data older than 24 hours is rejected
     if (now - authDate > 86400) {
       console.log("⚠️ Telegram auth expired");
       return null;
     }
+
+
+    if (!userData) {
+      console.log("❌ Missing user data");
+      return null;
+    }
+
 
     return {
       id: userData.id,
@@ -109,8 +147,14 @@ function verifyHash(
       hash: receivedHash,
     };
 
+
   } catch (error) {
-    console.error("❌ Hash verification error:", error);
+
+    console.error(
+      "❌ Hash verification error:",
+      error
+    );
+
     return null;
   }
 }

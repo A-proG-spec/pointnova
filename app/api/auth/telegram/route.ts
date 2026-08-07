@@ -75,8 +75,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      telegramUser = verifyTelegramWebAppData(data, botToken);
-      if (!telegramUser) {
+      telegramUser = verifyTelegramWebAppData(
+        data,
+        botToken,
+        userData,
+        initData
+      ); if (!telegramUser) {
         console.log('❌ Invalid Telegram data - verification failed');
         return NextResponse.json(
           { error: 'Invalid Telegram data' },
