@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { initData, ref } = body;
 
+    // ========== BACKEND REFERRAL DEBUG ==========
+    console.log("========== BACKEND REFERRAL DEBUG ==========");
+    console.log("Received ref:", ref);
+    console.log("Full body:", body);
+    console.log("============================================");
+
     console.log('📥 Received login request');
     console.log('📝 InitData length:', initData?.length || 0);
 
@@ -118,14 +124,19 @@ export async function POST(request: NextRequest) {
       let referrerUser = null;
       let referralBonus = 0;
 
-      // Handle referral
+      // ========== REFERRAL LOGIC WITH DEBUG ==========
       if (ref && ref.startsWith('ref_')) {
+        console.log("✅ Referral format valid:", ref);
+
         const referralCode = ref.replace('ref_', '');
+        console.log("🔎 Searching referral code:", referralCode);
+
         referrerUser = await User.findOne({ referralCode: referralCode });
+        console.log("👤 Referrer found:", referrerUser?.username || "NOT FOUND");
         
         if (referrerUser) {
           referredBy = referralCode;
-          referralBonus = 10; // Define bonus amount here
+          referralBonus = 10;
           
           console.log('📎 Referral code used:', referralCode, 'by user:', referrerUser.username);
           
@@ -144,7 +155,10 @@ export async function POST(request: NextRequest) {
           await referrerUser.save();
           console.log(`💰 Added ${referralBonus} points to referrer ${referrerUser.username}`);
         }
+      } else {
+        console.log("⚠️ No valid referral received. ref:", ref);
       }
+      // ========== END REFERRAL LOGIC ==========
 
       // Generate unique referral code
       let referralCode = "";
@@ -162,7 +176,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (!isUnique) {
-        // Fallback: use timestamp + random
         referralCode = `REF${Date.now().toString(36).toUpperCase()}`;
       }
 
@@ -183,6 +196,9 @@ export async function POST(request: NextRequest) {
         lastLogin: new Date(),
       });
 
+      console.log('✅ New user created with referralCode:', referralCode);
+      console.log('✅ referredBy set to:', referredBy);
+
       // Add new user to referrer's referral history
       if (referrerUser) {
         referrerUser.referralHistory.push({
@@ -192,8 +208,6 @@ export async function POST(request: NextRequest) {
         });
         await referrerUser.save();
       }
-
-      console.log('✅ New user created with referral code:', referralCode);
 
     } else {
       console.log('👤 Existing user found:', user._id);

@@ -15,25 +15,24 @@ export default function LoginPage() {
     initData, 
     isReady, 
     currentTelegramId,
-    startParam // ADD THIS
+    startParam
   } = useTelegram();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const authAttempted = useRef(false);
 
-  // FIX: Get referral from Telegram's start_param, not URL params
+  // Get referral from Telegram's start_param
   const ref = 
-    searchParams.get('ref') || // Fallback for direct browser access
-    startParam || // From Telegram (the correct source)
+    searchParams.get('ref') ||
+    startParam ||
     undefined;
 
-  // Debug log
-  useEffect(() => {
-    console.log('📝 Referral source:');
-    console.log('  - URL ref:', searchParams.get('ref'));
-    console.log('  - Telegram startParam:', startParam);
-    console.log('  - Final ref:', ref);
-  }, [ref, startParam]);
+  // ========== LOGIN REFERRAL DEBUG ==========
+  console.log("========== LOGIN REFERRAL DEBUG ==========");
+  console.log("URL ref:", searchParams.get("ref"));
+  console.log("Telegram startParam:", startParam);
+  console.log("Final referral sent:", ref);
+  console.log("==========================================");
 
   // Check for stored user mismatch on page load
   useEffect(() => {
@@ -45,7 +44,6 @@ export default function LoginPage() {
           if (storedUser.telegramId !== currentTelegramId) {
             console.log('🔄 User mismatch detected on login page. Clearing old session.');
             localStorage.removeItem('user_data');
-            // Clear cookie via API
             reauthenticate();
           }
         } catch (e) {
@@ -92,7 +90,13 @@ export default function LoginPage() {
         return;
       }
 
-      console.log('📤 Sending login request with ref:', ref);
+      // ========== AUTH REQUEST ==========
+      console.log("========== AUTH REQUEST ==========");
+      console.log({
+        initDataExists: !!initData,
+        referralBeingSent: ref
+      });
+      console.log("=================================");
 
       const response = await fetch('/api/auth/telegram', {
         method: 'POST',

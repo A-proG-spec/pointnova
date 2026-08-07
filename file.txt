@@ -1,1186 +1,372 @@
-# Project Structure
+import mongoose from 'mongoose';
 
-```
-├── app
-│   ├── api
-│   │   ├── auth
-│   │   │   ├── demo
-│   │   │   │   └── route.ts
-│   │   │   ├── logout
-│   │   │   │   └── route.ts
-│   │   │   ├── me
-│   │   │   │   └── route.ts
-│   │   │   └── telegram
-│   │   │       └── route.ts
-│   │   ├── leaderboard
-│   │   │   └── route.ts
-│   │   ├── referral
-│   │   │   └── route.ts
-│   │   ├── tasks
-│   │   │   └── route.ts
-│   │   ├── user
-│   │   │   └── route.ts
-│   │   └── withdraw
-│   │       └── route.ts
-│   ├── earn
-│   │   └── page.tsx
-│   ├── invite
-│   │   └── page.tsx
-│   ├── leaderboard
-│   │   └── page.tsx
-│   ├── login
-│   │   └── page.tsx
-│   ├── withdraw
-│   │   └── page.tsx
-│   ├── favicon.ico
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-├── components
-│   ├── auth
-│   │   ├── AuthProvider.tsx
-│   │   └── index.ts
-│   ├── telegram
-│   │   └── TelegramProvider.tsx
-│   ├── ui
-│   │   ├── BottomNav.tsx
-│   │   ├── EmptyState.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   ├── TaskCard.tsx
-│   │   ├── Toast.tsx
-│   │   └── UserCard.tsx
-│   └── index.ts
-├── lib
-│   ├── auth
-│   │   ├── jwt.ts
-│   │   └── telegram.ts
-│   ├── db
-│   │   ├── models
-│   │   │   ├── Task.ts
-│   │   │   └── User.ts
-│   │   └── mongoose.ts
-│   └── utils.ts
-├── public
-│   ├── file.svg
-│   ├── globe.svg
-│   ├── next.svg
-│   ├── vercel.svg
-│   └── window.svg
-├── types
-│   ├── css.d.ts
-│   └── index.ts
-├── eslint.config.mjs
-├── file.txt
-├── middleware.ts
-├── next.config.js
-├── package-lock.json
-├── package.json
-├── postcss.config.js
-├── postcss.config.mjs
-├── README.md
-├── tailwind.config.js
-└── tsconfig.json
-```
+const MONGODB_URI = process.env.MONGODB_URI;
 
-# File Contents
-
-## app/page.tsx
-
-```tsx
-'use client';
-
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
-import { UserCard } from '@/components/ui/UserCard';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { 
-  TrendingUp, 
-  Award, 
-  Users, 
-  Wallet,
-  LogOut,
-} from 'lucide-react';
-
-export default function HomePage() {
-  const { user, loading, logout, isAuthenticated } = useAuth();
-  const router = useRouter();
-
-  if (loading) {
-    return <LoadingSpinner text="Loading your profile..." />;
-  }
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen bg-black p-4 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            Welcome, {user.firstName} 👋
-          </h1>
-          <p className="text-white/60 text-sm">Let's earn some rewards!</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {user.photoUrl ? (
-            <img 
-              src={user.photoUrl} 
-              alt={user.firstName}
-              className="w-10 h-10 rounded-full border-2 border-green-500/30"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 font-bold">
-              {user.firstName.charAt(0)}
-            </div>
-          )}
-          <button
-            onClick={logout}
-            className="p-2 hover:bg-white/10 rounded-full transition-all"
-          >
-            <LogOut className="w-5 h-5 text-white/40 hover:text-white/80" />
-          </button>
-        </div>
-      </div>
-
-      {/* User Card */}
-      <UserCard
-        firstName={user.firstName}
-        lastName={user.lastName}
-        username={user.username}
-        balance={user.balance}
-        totalEarned={user.totalEarned}
-        telegramId={user.telegramId}
-        variant="detailed"
-        showStats={true}
-      />
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-3 mt-4 mb-6">
-        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-          <p className="text-white/40 text-xs mb-1">Today's Earnings</p>
-          <p className="text-green-500 font-bold text-lg">0 ETB</p>
-          <p className="text-white/20 text-xs mt-1">Complete tasks to earn</p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-          <p className="text-white/40 text-xs mb-1">Available Tasks</p>
-          <p className="text-white font-bold text-lg">5</p>
-          <p className="text-white/20 text-xs mt-1">Ready to complete</p>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="space-y-3">
-        <button
-          onClick={() => router.push('/earn')}
-          className="w-full bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg shadow-green-500/20"
-        >
-          <TrendingUp className="w-5 h-5" />
-          Start Earning Now
-        </button>
-        
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { icon: TrendingUp, label: 'Earn', path: '/earn', color: 'text-green-500' },
-            { icon: Award, label: 'Top', path: '/leaderboard', color: 'text-yellow-500' },
-            { icon: Users, label: 'Invite', path: '/invite', color: 'text-blue-500' },
-            { icon: Wallet, label: 'Withdraw', path: '/withdraw', color: 'text-purple-500' },
-          ].map((item) => (
-            <button
-              key={item.path}
-              onClick={() => router.push(item.path)}
-              className="flex flex-col items-center bg-[#1a1a1a] rounded-2xl p-3 hover:bg-[#222] transition-all border border-white/5 group"
-            >
-              <item.icon className={`w-6 h-6 ${item.color} mb-1 group-hover:scale-110 transition-transform`} />
-              <span className="text-xs text-white/80">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+// Check if MONGODB_URI is defined
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable');
 }
-```
 
-## app/layout.tsx
+// Use global cache to prevent multiple connections in development
+let cached = (global as any).mongoose;
 
-```tsx
-import type { Metadata, Viewport } from 'next';
-import { Outfit } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from '@/components/auth/AuthProvider';
-import { TelegramProvider } from '@/components/telegram/TelegramProvider';
-import { BottomNav } from '@/components/ui/BottomNav';
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
 
-const outfit = Outfit({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
-  display: 'swap',
-  variable: '--font-outfit',
+async function dbConnect() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    // MONGODB_URI is guaranteed to be defined here due to the check above
+    cached.promise = mongoose
+      .connect(MONGODB_URI as string, opts)
+      .then((mongoose) => {
+        console.log('✅ MongoDB connected');
+        return mongoose;
+      })
+      .catch((error) => {
+        console.error('❌ MongoDB connection error:', error);
+        cached.promise = null;
+        throw error;
+      });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
+
+export default dbConnect;
+import mongoose from 'mongoose';
+
+const UserSchema = new mongoose.Schema(
+  {
+    telegramId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+    },
+    photoUrl: {
+      type: String,
+    },
+    balance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    referralCode: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    referredBy: {
+      type: String,
+      sparse: true,
+    },
+    // Track referral earnings
+    referralEarnings: {
+      type: Number,
+      default: 0,
+    },
+    // Track referrals who joined
+    referralCount: {
+      type: Number,
+      default: 0,
+    },
+    // Add referral history (optional - for detailed tracking)
+    referralHistory: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        reward: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
+    languageCode: {
+      type: String,
+      default: 'en',
+    },
+    allowsWriteToPm: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Generate referral code before saving
+UserSchema.pre('save', function(next) {
+  if (!this.referralCode) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    this.referralCode = result;
+  }
+  next();
 });
 
-export const metadata: Metadata = {
-  title: 'PointNova - Earn with Tasks',
-  description: 'Complete tasks and earn rewards with PointNova',
-  applicationName: 'PointNova',
-  authors: [{ name: 'PointNova' }],
-  keywords: ['earn', 'tasks', 'rewards', 'points'],
-};
+export default mongoose.models.User || mongoose.model('User', UserSchema);
+import crypto from "crypto";
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en" className={`${outfit.variable} dark`}>
-      <head>
-        <script 
-          src="https://telegram.org/js/telegram-web-app.js" 
-          async
-        />
-      </head>
-      <body className={`${outfit.className} min-h-screen bg-black antialiased`}>
-        <TelegramProvider>
-          <AuthProvider>
-            <main className="min-h-screen bg-black pb-20">
-              {children}
-            </main>
-            <BottomNav />
-          </AuthProvider>
-        </TelegramProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-## app/globals.css
-
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 120 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 120 100% 50%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 100% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 120 100% 50%;
-    --radius: 0.75rem;
-  }
+export interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash?: string;
 }
 
-@layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-  
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
-}
-
-/* Selection color */
-::selection {
-  background: rgba(74, 222, 128, 0.3);
-  color: #ffffff;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Disable text selection on buttons */
-button {
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-```
-
-## app/favicon.ico
-
-```ico
-[Binary file content not included]
-```
-
-## app/withdraw/page.tsx
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Wallet, ArrowLeft, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-
-export default function WithdrawPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [userData, setUserData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [withdrawing, setWithdrawing] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch(`/api/user?userId=${user?.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUserData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWithdraw = async () => {
-    if (!userData || userData.balance < 50) {
-      setToast({
-        message: 'Minimum withdrawal amount is 50 ETB',
-        type: 'error'
-      });
-      return;
+export function verifyTelegramWebAppData(
+  data: Record<string, string>,
+  botToken: string,
+  userData?: any,
+  initDataString?: string
+): TelegramUser | null {
+  try {
+    if (!initDataString) {
+      console.log("❌ Missing initData string");
+      return null;
     }
 
-    setWithdrawing(true);
-    try {
-      const response = await fetch('/api/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          amount: userData.balance,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setToast({
-          message: data.message || 'Withdrawal feature coming soon!',
-          type: 'info'
-        });
-      }
-    } catch (error) {
-      console.error('Withdrawal error:', error);
-      setToast({
-        message: 'Failed to process withdrawal',
-        type: 'error'
-      });
-    } finally {
-      setWithdrawing(false);
+    if (!botToken) {
+      console.log("❌ Missing bot token");
+      return null;
     }
-  };
 
-  if (loading) {
-    return <LoadingSpinner text="Loading..." />;
-  }
-
-  return (
-    <div className="min-h-screen bg-black p-4 pb-24">
-      {toast && (
-        <div className={`fixed top-4 left-4 right-4 p-4 rounded-2xl z-50 animate-slide-down ${
-          toast.type === 'error' ? 'bg-red-500/90' :
-          toast.type === 'success' ? 'bg-green-500/90' :
-          'bg-blue-500/90'
-        }`}>
-          <p className="text-white text-center font-semibold">{toast.message}</p>
-        </div>
-      )}
-
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-white/10 rounded-full transition-all"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </button>
-        <h1 className="text-2xl font-bold text-white">Withdraw</h1>
-        <Wallet className="w-6 h-6 text-purple-500 ml-auto" />
-      </div>
-
-      <div className="bg-gradient-to-br from-purple-500/20 to-purple-500/5 rounded-3xl p-8 border border-purple-500/20 mb-8">
-        <p className="text-white/60 text-sm mb-2">Available Balance</p>
-        <p className="text-4xl font-bold text-white mb-2">
-          {userData?.balance || 0} ETB
-        </p>
-        <p className="text-white/40 text-sm">
-          Total Earned: {userData?.totalEarned || 0} ETB
-        </p>
-      </div>
-
-      <div className="bg-[#1a1a1a] rounded-2xl p-4 mb-6 border border-white/5">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-white/80 text-sm font-semibold">Withdrawal Information</p>
-            <ul className="text-white/60 text-sm mt-2 space-y-1">
-              <li>• Minimum withdrawal: 50 ETB</li>
-              <li>• Processing time: 24-48 hours</li>
-              <li>• Withdrawal method: Coming soon</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={handleWithdraw}
-        disabled={withdrawing || !userData || userData.balance < 50}
-        className={`w-full py-4 rounded-2xl font-semibold transition-all ${
-          withdrawing || !userData || userData.balance < 50
-            ? 'bg-white/5 text-white/40 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white shadow-lg shadow-purple-500/25 hover:scale-[1.02]'
-        }`}
-      >
-        {withdrawing ? (
-          <div className="flex items-center justify-center gap-2">
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-            <span>Processing...</span>
-          </div>
-        ) : (
-          'Withdraw Funds'
-        )}
-      </button>
-
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-          <p className="text-white/40 text-xs text-center">🔜 Bank Transfer</p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-          <p className="text-white/40 text-xs text-center">🔜 Telebirr</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-## app/login/page.tsx
-
-```tsx
-'use client';
-
-import { useEffect, useState, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Coins, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useTelegram } from '@/components/telegram/TelegramProvider';
-
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated, login } = useAuth();
-  const { user: telegramUser, initData, isReady } = useTelegram();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const authAttempted = useRef(false);
-
-  const ref = searchParams.get('ref');
-
-  // Utility to add debug logs
-  const addLog = (message: string) => {
-    console.log(message);
-    setDebugLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      addLog('✅ User already authenticated, redirecting...');
-      router.push('/');
+    if (!data.hash) {
+      console.log("❌ No hash found");
+      return null;
     }
-  }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    // Auto-login with Telegram when ready
-    if (isReady && initData && !isAuthenticated && !authAttempted.current) {
-      addLog('🚀 Auto-login triggered: isReady=true, initData exists');
-      authAttempted.current = true;
-      handleTelegramLogin();
-    }
-  }, [isReady, initData, isAuthenticated]);
+    console.log("🔐 Using Telegram hash verification");
 
-  const handleTelegramLogin = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      if (!initData) {
-        const msg = 'No Telegram data available. Please open the app from Telegram.';
-        addLog('❌ ' + msg);
-        setError(msg);
-        setIsLoading(false);
-        return;
-      }
-
-      addLog(`📤 Sending login request with initData length: ${initData.length}`);
-      addLog(`📎 Referral code: ${ref || 'none'}`);
-
-      // Send to backend
-      const response = await fetch('/api/auth/telegram', {
-        method: 'POST',
-          credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          initData,
-          ref: ref || undefined,
-        }),
-      });
-
-      addLog(`📨 Response status: ${response.status}`);
-
-      // Get the actual response text
-      const responseText = await response.text();
-      addLog(`📝 Response length: ${responseText.length} characters`);
-      addLog(`📋 Response preview: ${responseText.substring(0, 200)}`);
-
-      // Check if response is HTML (error)
-      if (responseText.startsWith('<!DOCTYPE') || responseText.startsWith('<html')) {
-        addLog('❌ ERROR: Received HTML instead of JSON - API route may not exist or server error');
-        throw new Error('Server returned HTML. Check that /api/auth/telegram route exists and is properly configured.');
-      }
-
-      // Try to parse as JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        addLog('✅ Successfully parsed JSON response');
-      } catch (e) {
-        addLog(`❌ Failed to parse JSON: ${e}`);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-      }
-
-      if (!response.ok) {
-        const errorMsg = data.error || 'Authentication failed';
-        addLog(`❌ Auth failed: ${errorMsg}`);
-        throw new Error(errorMsg);
-      }
-
-      addLog(`✅ Auth successful, user ID: ${data.user?.id}`);
-      
-      // Login user
-      login(data.user);
-      
-      addLog('🔄 Redirecting to home page...');
-      router.push('/');
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to login';
-      addLog(`❌ Login error: ${errorMsg}`);
-      console.error('Login error:', error);
-      setError(errorMsg);
-      setIsLoading(false);
-    }
-  };
-
-  // Check if in Telegram
-  const isInTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp;
-
-  // If not in Telegram, show alternative login
-  if (!isInTelegram && process.env.NODE_ENV !== 'development') {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="inline-block p-4 bg-green-500/10 rounded-full mb-4">
-            <Coins className="w-12 h-12 text-green-500" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">PointNova</h1>
-          <p className="text-white/60 mb-8">Earn rewards by completing tasks</p>
-          
-          <div className="bg-[#1a1a1a] rounded-2xl p-8 border border-white/5">
-            <h2 className="text-xl font-semibold text-white mb-4">Open in Telegram</h2>
-            <p className="text-white/60 text-sm mb-6">
-              This app is designed to work within Telegram. 
-              Please open it from the Telegram app.
-            </p>
-            <button
-              onClick={() => {
-                const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'your_bot_username';
-                window.location.href = `tg://resolve?domain=${botUsername}&startapp=referral`;
-              }}
-              className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-xl transition-all"
-            >
-              Open in Telegram
-            </button>
-          </div>
-        </div>
-      </div>
+    return verifyHash(
+      initDataString,
+      data.hash,
+      botToken,
+      userData
     );
-  }
 
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-green-500/10 rounded-full mb-4">
-            <Coins className="w-12 h-12 text-green-500" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">PointNova</h1>
-          <p className="text-white/60 mt-2">Earn rewards by completing tasks</p>
-        </div>
+  } catch (error) {
+    console.error(
+      "❌ Telegram verification error:",
+      error
+    );
 
-        {/* Login Card */}
-        <div className="bg-[#1a1a1a] rounded-2xl p-8 border border-white/5">
-          <h2 className="text-xl font-semibold text-white mb-6">
-            {isLoading ? 'Authenticating...' : 'Welcome Back'}
-          </h2>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-red-400 text-sm font-semibold mb-1">Error</p>
-                <p className="text-red-400 text-xs">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {!isReady && (
-            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-2">
-              <Loader2 className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5 animate-spin" />
-              <p className="text-yellow-400 text-sm">Loading Telegram data...</p>
-            </div>
-          )}
-
-          {telegramUser && (
-            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
-              {telegramUser.photo_url ? (
-                <img 
-                  src={telegramUser.photo_url} 
-                  alt={telegramUser.first_name}
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 font-bold">
-                  {telegramUser.first_name?.charAt(0) || '?'}
-                </div>
-              )}
-              <div>
-                <p className="text-white font-semibold text-sm">
-                  {telegramUser.first_name} {telegramUser.last_name || ''}
-                </p>
-                {telegramUser.username && (
-                  <p className="text-white/40 text-xs">@{telegramUser.username}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleTelegramLogin}
-            disabled={isLoading || !initData || !isReady}
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Authenticating...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/>
-                </svg>
-                <span>Continue with Telegram</span>
-              </>
-            )}
-          </button>
-
-          {!isReady && (
-            <p className="mt-3 text-center text-yellow-500 text-xs">
-              ⏳ Waiting for Telegram initialization...
-            </p>
-          )}
-
-          {isReady && !initData && (
-            <p className="mt-3 text-center text-yellow-500 text-xs">
-              ⚠️ No Telegram data detected. Make sure you're opening this from Telegram.
-            </p>
-          )}
-
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 pt-4 border-t border-white/5">
-              <button
-                onClick={() => window.location.href = '/api/auth/demo'}
-                className="w-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 font-semibold py-2 rounded-xl transition-all text-sm"
-              >
-                🚀 Quick Demo Login (Dev Only)
-              </button>
-            </div>
-          )}
-
-          <div className="mt-4 text-center">
-            <p className="text-white/40 text-xs">
-              By continuing, you agree to our Terms of Service
-            </p>
-          </div>
-        </div>
-
-        {/* Debug Logs - Only in development */}
-        {process.env.NODE_ENV === 'development' && debugLogs.length > 0 && (
-          <div className="mt-6 bg-[#0a0a0a] rounded-xl p-4 border border-white/10 max-h-64 overflow-y-auto">
-            <p className="text-white/60 text-xs font-semibold mb-2">🔍 Debug Logs:</p>
-            {debugLogs.map((log, i) => (
-              <p key={i} className="text-green-400/60 text-xs font-mono mb-1">
-                {log}
-              </p>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-## app/leaderboard/page.tsx
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Award, Crown, Medal } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-
-interface LeaderboardEntry {
-  position: number;
-  username: string;
-  totalEarned: number;
-}
-
-export default function LeaderboardPage() {
-  const router = useRouter();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await fetch('/api/leaderboard');
-      if (response.ok) {
-        const data = await response.json();
-        setEntries(data);
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getRankDisplay = (position: number) => {
-    if (position === 1) return <Crown className="w-5 h-5 text-yellow-500" />;
-    if (position === 2) return <Medal className="w-5 h-5 text-gray-400" />;
-    if (position === 3) return <Medal className="w-5 h-5 text-amber-600" />;
     return null;
-  };
-
-  if (loading) {
-    return <LoadingSpinner text="Loading leaderboard..." />;
   }
-
-  return (
-    <div className="min-h-screen bg-black p-4 pb-24">
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-white/10 rounded-full transition-all"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </button>
-        <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
-        <Award className="w-6 h-6 text-yellow-500 ml-auto" />
-      </div>
-
-      {entries.length >= 3 && (
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {entries.slice(0, 3).map((entry, index) => (
-            <div
-              key={index}
-              className={`bg-[#1a1a1a] rounded-2xl p-4 text-center border ${
-                index === 0 ? 'border-yellow-500/30 bg-yellow-500/5' :
-                index === 1 ? 'border-gray-400/30 bg-gray-400/5' :
-                'border-amber-600/30 bg-amber-600/5'
-              }`}
-            >
-              <div className="flex justify-center mb-2">
-                {getRankDisplay(index + 1)}
-              </div>
-              <p className="text-white font-semibold text-sm truncate">
-                {entry.username}
-              </p>
-              <p className="text-green-500 font-bold text-sm mt-1">
-                {entry.totalEarned} ETB
-              </p>
-              <p className="text-white/20 text-xs mt-1">#{index + 1}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {entries.length === 0 ? (
-        <EmptyState
-          icon={Award}
-          title="No Leaders Yet"
-          description="Be the first to earn and claim the top spot!"
-        />
-      ) : (
-        <div className="space-y-2">
-          {entries.slice(3).map((entry) => (
-            <div
-              key={entry.position}
-              className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5 flex items-center justify-between hover:border-white/10 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-white/40 font-bold w-8 text-center">
-                  #{entry.position}
-                </span>
-                <div>
-                  <p className="text-white font-semibold">{entry.username}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-green-500 font-bold">{entry.totalEarned} ETB</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-## app/invite/page.tsx
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Copy, Share2, Users, ArrowLeft, Check } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useTelegram } from '@/components/telegram/TelegramProvider';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-
-interface ReferralData {
-  referralCode: string;
-  referralLink: string;
-  referralCount: number;
 }
 
-export default function InvitePage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const { webApp } = useTelegram();
-  const [referralData, setReferralData] = useState<ReferralData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchReferralData();
+function verifyHash(
+  initDataString: string,
+  receivedHash: string,
+  botToken: string,
+  userData?: any
+): TelegramUser | null {
+
+  try {
+
+    const params = new URLSearchParams(initDataString);
+
+
+    /*
+      Telegram hash verification:
+      Remove only hash.
+      Keep signature because Telegram includes
+      the original fields in newer WebApp payloads.
+    */
+
+    params.delete("hash");
+
+
+    const dataCheckString = Array.from(
+      params.entries()
+    )
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(
+        ([key, value]) => `${key}=${value}`
+      )
+      .join("\n");
+
+
+    console.log(
+      "========== DATA CHECK STRING =========="
+    );
+
+    console.log(dataCheckString);
+
+    console.log(
+      "======================================"
+    );
+
+
+    const secretKey = crypto
+      .createHmac(
+        "sha256",
+        "WebAppData"
+      )
+      .update(botToken)
+      .digest();
+
+
+    const calculatedHash = crypto
+      .createHmac(
+        "sha256",
+        secretKey
+      )
+      .update(dataCheckString)
+      .digest("hex");
+
+
+    console.log(
+      "🔐 Hash comparison:"
+    );
+
+    console.log(
+      "Expected:",
+      receivedHash
+    );
+
+    console.log(
+      "Generated:",
+      calculatedHash
+    );
+
+
+    if (
+      calculatedHash !== receivedHash
+    ) {
+
+      console.log(
+        "❌ Telegram hash mismatch"
+      );
+
+      return null;
     }
-  }, [user]);
 
-  const fetchReferralData = async () => {
-    try {
-      const response = await fetch(`/api/referral?userId=${user?.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setReferralData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching referral data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleCopy = async () => {
-    if (referralData?.referralLink) {
-      try {
-        await navigator.clipboard.writeText(referralData.referralLink);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (error) {
-        console.error('Error copying:', error);
-      }
-    }
-  };
+    console.log(
+      "✅ Telegram hash verification successful"
+    );
 
-  const handleShare = async () => {
-    // Try Telegram share first
-    if (webApp) {
-      try {
-        webApp.sendData(JSON.stringify({
-          type: 'share',
-          text: `Join PointNova and start earning rewards! Use my referral link: ${referralData?.referralLink}`,
-        }));
-        return;
-      } catch (error) {
-        console.error('Telegram share error:', error);
-      }
+
+    const authDate = Number(
+      params.get("auth_date") || 0
+    );
+
+
+    const now = Math.floor(
+      Date.now() / 1000
+    );
+
+
+    console.log(
+      "Telegram auth date:",
+      authDate
+    );
+
+    console.log(
+      "Server timestamp:",
+      now
+    );
+
+
+    if (
+      now - authDate > 86400
+    ) {
+
+      console.log(
+        "⚠️ Telegram auth expired"
+      );
+
+      return null;
     }
 
-    // Fallback to Web Share API
-    if (referralData?.referralLink) {
-      try {
-        await navigator.share({
-          title: 'Join PointNova',
-          text: `Join PointNova and start earning rewards! Use my referral link: ${referralData.referralLink}`,
-          url: referralData.referralLink,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-        handleCopy();
-      }
-    }
-  };
 
-  if (loading) {
-    return <LoadingSpinner text="Loading..." />;
+    if (!userData) {
+
+      console.log(
+        "❌ Missing Telegram user data"
+      );
+
+      return null;
+    }
+
+
+    return {
+      id: userData.id,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      username: userData.username,
+      photo_url: userData.photo_url,
+      auth_date: authDate,
+      hash: receivedHash,
+    };
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ Hash verification error:",
+      error
+    );
+
+    return null;
   }
-
-  return (
-    <div className="min-h-screen bg-black p-4 pb-24">
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-white/10 rounded-full transition-all"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </button>
-        <h1 className="text-2xl font-bold text-white">Invite Friends</h1>
-        <Users className="w-6 h-6 text-blue-500 ml-auto" />
-      </div>
-
-      <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-3xl p-8 border border-white/5">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-10 h-10 text-blue-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Invite & Earn</h2>
-          <p className="text-white/60 text-sm">
-            Share your referral link with friends and earn rewards when they join!
-          </p>
-        </div>
-
-        <div className="bg-black/50 rounded-2xl p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm">Total Referrals</span>
-            <span className="text-white font-bold text-xl">{referralData?.referralCount || 0}</span>
-          </div>
-        </div>
-
-        <div className="bg-black/50 rounded-2xl p-4 mb-4">
-          <p className="text-white/60 text-sm mb-2">Your Referral Code</p>
-          <p className="text-white font-mono text-lg font-bold tracking-wider">
-            {referralData?.referralCode}
-          </p>
-        </div>
-
-        <div className="bg-black/50 rounded-2xl p-4 mb-6">
-          <p className="text-white/60 text-sm mb-2">Your Referral Link</p>
-          <div className="flex items-center gap-2">
-            <p className="text-white/80 text-sm flex-1 break-all font-mono">
-              {referralData?.referralLink}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <button
-            onClick={handleCopy}
-            className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/10"
-          >
-            {copied ? (
-              <>
-                <Check className="w-5 h-5 text-green-500" />
-                <span>Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                <span>Copy Link</span>
-              </>
-            )}
-          </button>
-          
-          <button
-            onClick={handleShare}
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all"
-          >
-            <Share2 className="w-5 h-5" />
-            <span>Share Link</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-        <h3 className="text-white font-semibold mb-2">How it works</h3>
-        <div className="space-y-2 text-white/60 text-sm">
-          <p>1. Share your referral link with friends</p>
-          <p>2. Friends join PointNova using your link</p>
-          <p>3. You both earn rewards (Coming soon)</p>
-        </div>
-      </div>
-    </div>
-  );
 }
-```
-
-## app/earn/page.tsx
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp } from 'lucide-react';
-import { TaskCard } from '@/components/ui/TaskCard';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { useAuth } from '@/components/auth/AuthProvider';
-
-interface Task {
-  _id: string;
-  title: string;
-  description: string;
-  reward: number;
-  url: string;
-}
-
-export default function EarnPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTaskPlay = (taskId: string) => {
-    console.log(`Task ${taskId} was played`);
-  };
-
-  if (loading) {
-    return <LoadingSpinner text="Loading tasks..." />;
-  }
-
-  return (
-    <div className="min-h-screen bg-black p-4 pb-24">
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-white/10 rounded-full transition-all"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </button>
-        <h1 className="text-2xl font-bold text-white">Earn Points</h1>
-        <TrendingUp className="w-6 h-6 text-green-500 ml-auto" />
-      </div>
-
-      {tasks.length === 0 ? (
-        <EmptyState
-          icon={TrendingUp}
-          title="No Tasks Available"
-          description="Check back later for new earning opportunities!"
-        />
-      ) : (
-        <div className="space-y-4">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task._id}
-              id={task._id}
-              title={task.title}
-              description={task.description}
-              reward={task.reward}
-              url={task.url}
-              onPlay={handleTaskPlay}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-```
-

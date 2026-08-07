@@ -11,7 +11,7 @@ interface TelegramContextType {
   close: () => void;
   expand: () => void;
   currentTelegramId: string | null;
-  startParam: string | null; // ADD THIS
+  startParam: string | null;
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -23,7 +23,7 @@ const TelegramContext = createContext<TelegramContextType>({
   close: () => {},
   expand: () => {},
   currentTelegramId: null,
-  startParam: null, // ADD THIS
+  startParam: null,
 });
 
 export function useTelegram() {
@@ -40,7 +40,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [initData, setInitData] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [currentTelegramId, setCurrentTelegramId] = useState<string | null>(null);
-  const [startParam, setStartParam] = useState<string | null>(null); // ADD THIS
+  const [startParam, setStartParam] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -53,15 +53,20 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         console.log('📱 Telegram WebApp detected');
         const tgUser = app.initDataUnsafe?.user || null;
         const tgId = tgUser?.id?.toString() || null;
-        const tgStartParam = app.initDataUnsafe?.start_param || null; // ADD THIS
+        const tgStartParam = app.initDataUnsafe?.start_param || null;
         
-        console.log('📝 start_param from Telegram:', tgStartParam); // Debug log
+        // ========== TELEGRAM DEBUG ==========
+        console.log("========== TELEGRAM DEBUG ==========");
+        console.log("initData:", app.initData);
+        console.log("initDataUnsafe:", app.initDataUnsafe);
+        console.log("start_param:", app.initDataUnsafe?.start_param);
+        console.log("====================================");
         
         setWebApp(app);
         setUser(tgUser);
         setInitData(app.initData || '');
         setCurrentTelegramId(tgId);
-        setStartParam(tgStartParam); // ADD THIS
+        setStartParam(tgStartParam);
         setIsReady(true);
         app.expand();
         app.enableClosingConfirmation();
@@ -81,9 +86,13 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
           hash: 'mock_hash'
         }).toString();
 
-        // For development, check URL params
         const urlParams = new URLSearchParams(window.location.search);
         const mockStartParam = urlParams.get('startapp') || urlParams.get('ref') || null;
+
+        // ========== TELEGRAM DEBUG (Dev) ==========
+        console.log("========== TELEGRAM DEBUG ==========");
+        console.log("Mock startParam from URL:", mockStartParam);
+        console.log("====================================");
 
         setUser(mockUser);
         setInitData(mockInitData);
@@ -131,7 +140,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         close,
         expand,
         currentTelegramId,
-        startParam, // ADD THIS
+        startParam,
       }}
     >
       {children}
