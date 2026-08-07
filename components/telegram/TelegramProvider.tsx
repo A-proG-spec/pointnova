@@ -10,6 +10,7 @@ interface TelegramContextType {
   sendData: (data: any) => void;
   close: () => void;
   expand: () => void;
+  currentTelegramId: string | null; // ADD THIS
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -20,6 +21,7 @@ const TelegramContext = createContext<TelegramContextType>({
   sendData: () => {},
   close: () => {},
   expand: () => {},
+  currentTelegramId: null, // ADD THIS
 });
 
 export function useTelegram() {
@@ -35,26 +37,28 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [initData, setInitData] = useState('');
   const [isReady, setIsReady] = useState(false);
+  const [currentTelegramId, setCurrentTelegramId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if running in browser
     if (typeof window === 'undefined') return;
 
     const initTelegram = () => {
-      // Check for Telegram WebApp
       const telegram = (window as any).Telegram;
       const app = telegram?.WebApp;
       
       if (app) {
         console.log('📱 Telegram WebApp detected');
+        const tgUser = app.initDataUnsafe?.user || null;
+        const tgId = tgUser?.id?.toString() || null;
+        
         setWebApp(app);
-        setUser(app.initDataUnsafe?.user || null);
+        setUser(tgUser);
         setInitData(app.initData || '');
+        setCurrentTelegramId(tgId);
         setIsReady(true);
         app.expand();
         app.enableClosingConfirmation();
       } else if (process.env.NODE_ENV === 'development') {
-        // Mock for development
         console.log('🔧 Development mode: Using mock Telegram');
         const mockUser = {
           id: 123456789,
@@ -72,6 +76,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
         setUser(mockUser);
         setInitData(mockInitData);
+        setCurrentTelegramId(mockUser.id.toString());
         setIsReady(true);
         console.log('🔧 Mock Telegram initialized');
       } else {
@@ -79,7 +84,6 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Try immediately and after a delay
     initTelegram();
     const timeout = setTimeout(initTelegram, 500);
 
@@ -114,6 +118,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         sendData,
         close,
         expand,
+        currentTelegramId, // ADD THIS
       }}
     >
       {children}

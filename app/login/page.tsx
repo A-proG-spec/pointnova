@@ -9,19 +9,60 @@ import { useTelegram } from '@/components/telegram/TelegramProvider';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, login } = useAuth();
-  const { user: telegramUser, initData, isReady } = useTelegram();
+  const { isAuthenticated, login, reauthenticate } = useAuth();
+  const { user: telegramUser, initData, isReady, currentTelegramId } = useTelegram();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const authAttempted = useRef(false);
 
-  const ref = searchParams.get('ref');
+  // FIX: Get referral code from both 'ref' and 'startapp' parameters
+  let ref = searchParams.get('ref');
+  if (!ref) {
+    // Telegram passes referral as 'startapp' parameter
+    const startapp = searchParams.get('startapp');
+    if (startapp && startapp.startsWith('ref_')) {
+      ref = startapp;
+    }
+  }
+
+  // Check for stored user mismatch on page load
+  useEffect(() => {
+    if (isReady && currentTelegramId) {
+      const storedUserData = localStorage.getItem('user_data');
+      if (storedUserData) {
+        try {
+          const storedUser = JSON.parse(storedUserData);
+          if (storedUser.telegramId !== currentTelegramId) {
+            console.log('🔄 User mismatch detected on login page. Clearing old session.');
+            localStorage.removeItem('user_data');
+            document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            reauthenticate();
+          }
+        } catch (e) {
+          console.error('Error checking stored user:', e);
+        }
+      }
+    }
+  }, [isReady, currentTelegramId]);
 
   useEffect(() => {
     if (isAuthenticated) {
+      const storedUserData = localStorage.getItem('user_data');
+      if (storedUserData && currentTelegramId) {
+        try {
+          const storedUser = JSON.parse(storedUserData);
+          if (storedUser.telegramId !== currentTelegramId) {
+            console.log('❌ Auth mismatch. Re-authenticating.');
+            reauthenticate();
+            return;
+          }
+        } catch (e) {
+          console.error('Error:', e);
+        }
+      }
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, currentTelegramId]);
 
   useEffect(() => {
     if (isReady && initData && !isAuthenticated && !authAttempted.current) {
@@ -40,6 +81,8 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
+
+      console.log('📝 Sending referral ref:', ref); // Debug log
 
       const response = await fetch('/api/auth/telegram', {
         method: 'POST',

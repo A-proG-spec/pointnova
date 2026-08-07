@@ -3,7 +3,6 @@ import { verifyToken } from '@/lib/auth/jwt';
 import dbConnect from '@/lib/db/mongoose';
 import User from '@/lib/db/models/User';
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -29,6 +28,21 @@ export async function GET(request: NextRequest) {
     if (!user) {
       console.log('❌ User not found:', decoded.userId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    // ADD: Get current Telegram user from request (if available)
+    // This adds an extra layer of validation
+    const telegramInitData = request.cookies.get('telegram_user')?.value;
+    if (telegramInitData) {
+      try {
+        const tgData = JSON.parse(telegramInitData);
+        if (tgData.id && user.telegramId !== tgData.id.toString()) {
+          console.log('❌ User mismatch: DB user vs Telegram user');
+          return NextResponse.json({ error: 'User mismatch' }, { status: 401 });
+        }
+      } catch (e) {
+        console.log('⚠️ Could not parse telegram user data');
+      }
     }
     
     console.log('✅ User found:', user._id);
