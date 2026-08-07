@@ -1,0 +1,209 @@
+'use client';
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+
+// Update User interface to include referrals
+interface User {
+  id: string;
+  telegramId: string;
+  username?: string;
+  firstName: string;
+  lastName?: string;
+  photoUrl?: string;
+  balance: number;
+  totalEarned: number;
+  referralCode: string;
+  referredBy?: string;
+  referrals?: {
+    userId: string;
+    username: string;
+    firstName: string;
+    joinedAt: string;
+  }[];
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: (userData: User) => void;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  refreshUser: () => Promise<void>; // Add refresh function
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  login: () => {},
+  logout: async () => {},
+  isAuthenticated: false,
+  refreshUser: async () => {},
+});
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      console.log('🔍 Checking authentication...');
+
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Existing session found');
+        setUser(data.user);
+        Cookies.set(
+          'user_data',
+          JSON.stringify(data.user),
+          { expires: 7 }
+        );
+        return;
+      }
+
+      console.log('⚠️ User not found or token expired');
+      Cookies.remove('user_data');
+
+      // Remove old JWT cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      // Try automatic Telegram re-login
+      const telegram = (window as any).Telegram?.WebApp;
+
+      if (telegram?.initData) {
+        console.log('🔄 Telegram re-authentication started');
+
+        const authResponse = await fetch('/api/auth/telegram', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            initData: telegram.initData,
+          }),
+        });
+
+        const authData = await authResponse.json();
+
+        if (authResponse.ok) {
+          console.log('✅ Telegram re-authentication successful');
+          setUser(authData.user);
+          Cookies.set(
+            'user_data',
+            JSON.stringify(authData.user),
+            { expires: 7 }
+          );
+          return;
+        }
+
+        console.log('❌ Telegram authentication failed');
+      } else {
+        console.log('⚠️ Telegram WebApp data not available');
+      }
+
+      router.push('/login');
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      router.push('/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = (userData: User) => {
+    setUser(userData);
+    Cookies.set(
+      'user_data',
+      JSON.stringify(userData),
+      { expires: 7 }
+    );
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      setUser(null);
+      Cookies.remove('auth_token');
+      Cookies.remove('user_data');
+
+      router.push('/login');
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+    }
+  };
+
+  // Add refresh function to update user data (useful after referrals)
+  const refreshUser = async () => {
+    try {
+      console.log('🔄 Refreshing user data...');
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        Cookies.set(
+          'user_data',
+          JSON.stringify(data.user),
+          { expires: 7 }
+        );
+        console.log('✅ User data refreshed');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-white/60 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+        refreshUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
