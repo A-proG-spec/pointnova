@@ -28,13 +28,16 @@ const TelegramContext = createContext<TelegramContextType>({
 
 export function useTelegram() {
   const context = useContext(TelegramContext);
+
   if (!context) {
     throw new Error('useTelegram must be used within a TelegramProvider');
   }
+
   return context;
 }
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
+
   const [webApp, setWebApp] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [initData, setInitData] = useState('');
@@ -42,99 +45,197 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [currentTelegramId, setCurrentTelegramId] = useState<string | null>(null);
   const [startParam, setStartParam] = useState<string | null>(null);
 
+
   useEffect(() => {
+
     if (typeof window === 'undefined') return;
 
+
     const initTelegram = () => {
+
       const telegram = (window as any).Telegram;
       const app = telegram?.WebApp;
-      
-      if (app) {
-        console.log('📱 Telegram WebApp detected');
-        const tgUser = app.initDataUnsafe?.user || null;
-        const tgId = tgUser?.id?.toString() || null;
-        const tgStartParam = app.initDataUnsafe?.start_param || null;
-        
-        // ========== TELEGRAM DEBUG ==========
-        console.log("========== TELEGRAM DEBUG ==========");
-        console.log("initData:", app.initData);
-        console.log("initDataUnsafe:", app.initDataUnsafe);
-        console.log("start_param:", app.initDataUnsafe?.start_param);
-        console.log("====================================");
-        
-        setWebApp(app);
-        setUser(tgUser);
-        setInitData(app.initData || '');
-        setCurrentTelegramId(tgId);
-        setStartParam(tgStartParam);
-        setIsReady(true);
+
+
+      if (!app) {
+
+        console.log('⚠️ Telegram WebApp not detected');
+
+        return;
+      }
+
+
+      console.log('📱 Telegram WebApp detected');
+
+
+      // IMPORTANT: tell Telegram the app is ready
+      app.ready();
+
+
+      const tgUser = app.initDataUnsafe?.user || null;
+
+      const tgId = tgUser?.id
+        ? tgUser.id.toString()
+        : null;
+
+
+      const tgStartParam =
+        app.initDataUnsafe?.start_param ||
+        null;
+
+
+
+      console.log("========== TELEGRAM DEBUG ==========");
+      console.log("initData:", app.initData);
+      console.log("user:", tgUser);
+      console.log("telegram id:", tgId);
+      console.log("start_param:", tgStartParam);
+      console.log("initDataUnsafe:", app.initDataUnsafe);
+      console.log("====================================");
+
+
+
+      setWebApp(app);
+      setUser(tgUser);
+      setInitData(app.initData || '');
+      setCurrentTelegramId(tgId);
+      setStartParam(tgStartParam);
+      setIsReady(true);
+
+
+      try {
         app.expand();
         app.enableClosingConfirmation();
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Using mock Telegram');
-        const mockUser = {
-          id: 123456789,
-          first_name: 'Dev',
-          last_name: 'User',
-          username: 'devuser',
-          photo_url: 'https://ui-avatars.com/api/?name=Dev+User&background=22c55e&color=fff',
-        };
-        
-        const mockInitData = new URLSearchParams({
+      } catch(err){
+        console.log("Telegram UI method error:", err);
+      }
+
+    };
+
+
+    // Try immediately
+    initTelegram();
+
+
+    // Telegram sometimes loads late
+    const interval = setInterval(() => {
+
+      if (!isReady) {
+        initTelegram();
+      }
+
+    }, 500);
+
+
+
+    return () => {
+      clearInterval(interval);
+    };
+
+
+  }, [isReady]);
+
+
+
+  // Development mock
+  useEffect(() => {
+
+    if (
+      process.env.NODE_ENV === 'development' &&
+      !isReady
+    ) {
+
+      const mockUser = {
+        id: 123456789,
+        first_name: 'Dev',
+        last_name: 'User',
+        username: 'devuser',
+      };
+
+
+      const mockInitData =
+        new URLSearchParams({
           user: JSON.stringify(mockUser),
-          auth_date: Math.floor(Date.now() / 1000).toString(),
+          auth_date: Math.floor(Date.now()/1000).toString(),
           hash: 'mock_hash'
         }).toString();
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const mockStartParam = urlParams.get('startapp') || urlParams.get('ref') || null;
 
-        // ========== TELEGRAM DEBUG (Dev) ==========
-        console.log("========== TELEGRAM DEBUG ==========");
-        console.log("Mock startParam from URL:", mockStartParam);
-        console.log("====================================");
+      const params =
+        new URLSearchParams(window.location.search);
 
-        setUser(mockUser);
-        setInitData(mockInitData);
-        setCurrentTelegramId(mockUser.id.toString());
-        setStartParam(mockStartParam);
-        setIsReady(true);
-        console.log('🔧 Mock Telegram initialized with startParam:', mockStartParam);
-      } else {
-        console.log('⚠️ No Telegram WebApp found');
-      }
-    };
 
-    initTelegram();
-    const timeout = setTimeout(initTelegram, 500);
+      const mockStartParam =
+        params.get('startapp') ||
+        params.get('ref') ||
+        null;
 
-    return () => clearTimeout(timeout);
-  }, []);
 
-  const sendData = (data: any) => {
-    if (webApp) {
-      webApp.sendData(typeof data === 'string' ? data : JSON.stringify(data));
+
+      console.log("========== DEV TELEGRAM DEBUG ==========");
+      console.log("mock startParam:", mockStartParam);
+      console.log("========================================");
+
+
+
+      setUser(mockUser);
+      setInitData(mockInitData);
+      setCurrentTelegramId(
+        mockUser.id.toString()
+      );
+      setStartParam(mockStartParam);
+      setIsReady(true);
+
     }
+
+  }, [isReady]);
+
+
+
+  const sendData = (data:any)=>{
+
+    if(webApp){
+
+      webApp.sendData(
+        typeof data === 'string'
+        ? data
+        : JSON.stringify(data)
+      );
+
+    }
+
   };
 
-  const close = () => {
-    if (webApp) {
+
+
+  const close = ()=>{
+
+    if(webApp){
       webApp.close();
     }
+
   };
 
-  const expand = () => {
-    if (webApp) {
+
+
+  const expand = ()=>{
+
+    if(webApp){
       webApp.expand();
     }
+
   };
 
+
+
   return (
-    <TelegramContext.Provider 
-      value={{ 
-        webApp, 
-        user, 
-        initData, 
+
+    <TelegramContext.Provider
+
+      value={{
+        webApp,
+        user,
+        initData,
         isReady,
         sendData,
         close,
@@ -142,8 +243,13 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         currentTelegramId,
         startParam,
       }}
+
     >
+
       {children}
+
     </TelegramContext.Provider>
+
   );
+
 }
