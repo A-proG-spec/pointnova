@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+// Check if MONGODB_URI is defined
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable');
 }
@@ -21,13 +22,14 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 10, // Add connection pooling for production
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     };
 
+    // MONGODB_URI is guaranteed to be defined here due to the check above
     cached.promise = mongoose
-      .connect(MONGODB_URI, opts)
+      .connect(MONGODB_URI as string, opts)
       .then((mongoose) => {
         console.log('✅ MongoDB connected');
         return mongoose;
