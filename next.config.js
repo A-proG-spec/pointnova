@@ -10,13 +10,8 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   swcMinify: true,
-  env: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
-    NEXT_PUBLIC_CURRENCY: process.env.NEXT_PUBLIC_CURRENCY,
-    NEXT_PUBLIC_MIN_WITHDRAWAL: process.env.NEXT_PUBLIC_MIN_WITHDRAWAL,
-  },
+  // Remove the env section entirely - it's not needed
+  // The env vars are accessed via process.env directly
 };
 
 module.exports = nextConfig;

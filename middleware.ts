@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   
   // Public paths
   const publicPaths = [
+    '/',
     '/login',
     '/api/auth/telegram',
     '/api/auth/demo',
@@ -16,6 +17,11 @@ export function middleware(request: NextRequest) {
   
   // Check for auth token
   const token = request.cookies.get('auth_token')?.value;
+  
+  // Allow public paths without authentication
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
   
   // Redirect to login if not authenticated
   if (!token && !isPublicPath && !isApiPath) {
