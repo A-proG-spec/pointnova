@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db/mongoose';
 import User from '@/lib/db/models/User';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -27,12 +29,11 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       id: user._id,
-      googleId: user.googleId,
-      email: user.email,
-      name: user.name,
+      telegramId: user.telegramId,
+      username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
-      picture: user.picture,
+      photoUrl: user.photoUrl,
       balance: user.balance,
       totalEarned: user.totalEarned,
       referralCode: user.referralCode,

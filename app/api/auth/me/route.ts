@@ -3,6 +3,9 @@ import { verifyToken } from '@/lib/auth/jwt';
 import dbConnect from '@/lib/db/mongoose';
 import User from '@/lib/db/models/User';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
@@ -42,7 +45,6 @@ export async function GET(request: NextRequest) {
         totalEarned: user.totalEarned,
         referralCode: user.referralCode,
         referredBy: user.referredBy,
-        referrals: user.referrals || [], // Include referrals
       }
     });
   } catch (error) {

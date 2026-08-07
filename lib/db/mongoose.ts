@@ -3,10 +3,10 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error('Please define the MONGODB_URI environment variable');
 }
 
-// Use type assertion to fix TypeScript errors
+// Use global cache to prevent multiple connections in development
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -21,16 +21,15 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10, // Add connection pooling for production
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s
       socketTimeoutMS: 45000,
     };
 
-    // Use the MONGODB_URI with type assertion since we already checked it exists
     cached.promise = mongoose
-      .connect(MONGODB_URI as string, opts)
+      .connect(MONGODB_URI, opts)
       .then((mongoose) => {
-        console.log('✅ MongoDB connected successfully');
+        console.log('✅ MongoDB connected');
         return mongoose;
       })
       .catch((error) => {

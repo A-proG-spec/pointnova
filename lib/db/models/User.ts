@@ -42,19 +42,32 @@ const UserSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
-    referrals: [
+    // Track referral earnings
+    referralEarnings: {
+      type: Number,
+      default: 0,
+    },
+    // Track referrals who joined
+    referralCount: {
+      type: Number,
+      default: 0,
+    },
+    // Add referral history (optional - for detailed tracking)
+    referralHistory: [
       {
         userId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
         },
-        username: String,
-        firstName: String,
         joinedAt: {
           type: Date,
           default: Date.now,
         },
-      }
+        reward: {
+          type: Number,
+          default: 0,
+        },
+      },
     ],
     isActive: {
       type: Boolean,
@@ -79,7 +92,7 @@ const UserSchema = new mongoose.Schema(
 );
 
 // Generate referral code before saving
-UserSchema.pre('save', function (next) {
+UserSchema.pre('save', function(next) {
   if (!this.referralCode) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
