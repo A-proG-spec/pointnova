@@ -42,7 +42,11 @@ export function verifyTelegramWebAppData(
     );
 
   } catch (error) {
-    console.error("❌ Telegram verification error:", error);
+    console.error(
+      "❌ Telegram verification error:",
+      error
+    );
+
     return null;
   }
 }
@@ -59,20 +63,36 @@ function verifyHash(
 
     const params = new URLSearchParams(initDataString);
 
-    // Remove fields that Telegram does not include in hash calculation
+
+    /*
+      Telegram hash verification:
+      Remove only hash.
+      Keep signature because Telegram includes
+      the original fields in newer WebApp payloads.
+    */
+
     params.delete("hash");
-    params.delete("signature");
 
 
-    const dataCheckString = Array.from(params.entries())
+    const dataCheckString = Array.from(
+      params.entries()
+    )
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${key}=${value}`)
+      .map(
+        ([key, value]) => `${key}=${value}`
+      )
       .join("\n");
 
 
-    console.log("========== DATA CHECK STRING ==========");
+    console.log(
+      "========== DATA CHECK STRING =========="
+    );
+
     console.log(dataCheckString);
-    console.log("======================================");
+
+    console.log(
+      "======================================"
+    );
 
 
     const secretKey = crypto
@@ -93,18 +113,36 @@ function verifyHash(
       .digest("hex");
 
 
-    console.log("🔐 Hash comparison:");
-    console.log("Expected:", receivedHash);
-    console.log("Generated:", calculatedHash);
+    console.log(
+      "🔐 Hash comparison:"
+    );
+
+    console.log(
+      "Expected:",
+      receivedHash
+    );
+
+    console.log(
+      "Generated:",
+      calculatedHash
+    );
 
 
-    if (calculatedHash !== receivedHash) {
-      console.log("❌ Telegram hash mismatch");
+    if (
+      calculatedHash !== receivedHash
+    ) {
+
+      console.log(
+        "❌ Telegram hash mismatch"
+      );
+
       return null;
     }
 
 
-    console.log("✅ Telegram hash verification successful");
+    console.log(
+      "✅ Telegram hash verification successful"
+    );
 
 
     const authDate = Number(
@@ -117,22 +155,35 @@ function verifyHash(
     );
 
 
-    console.log("========== TIME CHECK ==========");
-    console.log("Telegram auth_date:", authDate);
-    console.log("Server timestamp:", now);
-    console.log("Difference:", now - authDate);
-    console.log("===============================");
+    console.log(
+      "Telegram auth date:",
+      authDate
+    );
+
+    console.log(
+      "Server timestamp:",
+      now
+    );
 
 
-    // Data older than 24 hours is rejected
-    if (now - authDate > 86400) {
-      console.log("⚠️ Telegram auth expired");
+    if (
+      now - authDate > 86400
+    ) {
+
+      console.log(
+        "⚠️ Telegram auth expired"
+      );
+
       return null;
     }
 
 
     if (!userData) {
-      console.log("❌ Missing user data");
+
+      console.log(
+        "❌ Missing Telegram user data"
+      );
+
       return null;
     }
 
