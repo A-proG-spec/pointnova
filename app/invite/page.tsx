@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Share2, Users, ArrowLeft, Check, UserPlus, Coins } from 'lucide-react';
+import { Copy, Share2, Users, ArrowLeft, Check, UserPlus, Coins, Link2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTelegram } from '@/components/telegram/TelegramProvider';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -21,7 +21,7 @@ interface ReferralData {
 
 export default function InvitePage() {
   const router = useRouter();
-  const { user, refreshUser } = useAuth(); // Add refreshUser
+  const { user, refreshUser } = useAuth();
   const { webApp } = useTelegram();
   const [referralData, setReferralData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,12 +146,23 @@ export default function InvitePage() {
           </div>
         </div>
 
-        {/* Referral Code */}
+        {/* CHANGED: Referral Code → Referral Link */}
         <div className="bg-black/50 rounded-xl p-3 mb-4 border border-white/5">
-          <p className="text-white/40 text-xs mb-1">Your Referral Code</p>
-          <p className="text-white font-mono text-sm font-bold tracking-wider">
-            {referralData?.referralCode}
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <Link2 className="w-4 h-4 text-blue-400" />
+            <p className="text-white/40 text-xs font-medium">Your Referral Link</p>
+          </div>
+          <div className="bg-black/30 rounded-lg p-2.5 mb-2">
+            <p className="text-white/80 text-xs break-all font-mono">
+              {referralData?.referralLink}
+            </p>
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-white/20 text-[10px]">Share this link with friends</p>
+            <span className="text-white/20 text-[10px] bg-white/5 px-2 py-0.5 rounded-full">
+              {referralData?.referralCode}
+            </span>
+          </div>
         </div>
 
         {/* Invited Users List */}

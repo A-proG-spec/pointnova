@@ -10,20 +10,30 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, login, reauthenticate } = useAuth();
-  const { user: telegramUser, initData, isReady, currentTelegramId } = useTelegram();
+  const { 
+    user: telegramUser, 
+    initData, 
+    isReady, 
+    currentTelegramId,
+    startParam // ADD THIS
+  } = useTelegram();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const authAttempted = useRef(false);
 
-  // FIX: Get referral code from both 'ref' and 'startapp' parameters
-  let ref = searchParams.get('ref');
-  if (!ref) {
-    // Telegram passes referral as 'startapp' parameter
-    const startapp = searchParams.get('startapp');
-    if (startapp && startapp.startsWith('ref_')) {
-      ref = startapp;
-    }
-  }
+  // FIX: Get referral from Telegram's start_param, not URL params
+  const ref = 
+    searchParams.get('ref') || // Fallback for direct browser access
+    startParam || // From Telegram (the correct source)
+    undefined;
+
+  // Debug log
+  useEffect(() => {
+    console.log('📝 Referral source:');
+    console.log('  - URL ref:', searchParams.get('ref'));
+    console.log('  - Telegram startParam:', startParam);
+    console.log('  - Final ref:', ref);
+  }, [ref, startParam]);
 
   // Check for stored user mismatch on page load
   useEffect(() => {
@@ -35,7 +45,7 @@ export default function LoginPage() {
           if (storedUser.telegramId !== currentTelegramId) {
             console.log('🔄 User mismatch detected on login page. Clearing old session.');
             localStorage.removeItem('user_data');
-            document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            // Clear cookie via API
             reauthenticate();
           }
         } catch (e) {
@@ -43,7 +53,7 @@ export default function LoginPage() {
         }
       }
     }
-  }, [isReady, currentTelegramId]);
+  }, [isReady, currentTelegramId, reauthenticate]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -62,7 +72,7 @@ export default function LoginPage() {
       }
       router.push('/');
     }
-  }, [isAuthenticated, router, currentTelegramId]);
+  }, [isAuthenticated, router, currentTelegramId, reauthenticate]);
 
   useEffect(() => {
     if (isReady && initData && !isAuthenticated && !authAttempted.current) {
@@ -82,13 +92,16 @@ export default function LoginPage() {
         return;
       }
 
-      console.log('📝 Sending referral ref:', ref); // Debug log
+      console.log('📤 Sending login request with ref:', ref);
 
       const response = await fetch('/api/auth/telegram', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, ref: ref || undefined }),
+        body: JSON.stringify({ 
+          initData, 
+          ref: ref || undefined 
+        }),
       });
 
       const data = await response.json();
@@ -122,6 +135,14 @@ export default function LoginPage() {
             <div className="mb-3 p-2.5 bg-black border border-rose-500/30 rounded-lg flex items-center gap-2 text-zinc-300 text-xs">
               <AlertCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
               <p>{error}</p>
+            </div>
+          )}
+
+          {ref && (
+            <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <p className="text-emerald-400 text-xs text-center">
+                🔗 Referral detected: <span className="font-mono">{ref}</span>
+              </p>
             </div>
           )}
 

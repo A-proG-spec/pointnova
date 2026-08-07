@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { useTelegram } from '@/components/telegram/TelegramProvider'; // ADD THIS IMPORT
+import { useTelegram } from '@/components/telegram/TelegramProvider';
 
 interface User {
   id: string;
@@ -31,7 +31,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
-  reauthenticate: () => Promise<void>; // ADD THIS
+  reauthenticate: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -56,19 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { currentTelegramId, isReady } = useTelegram(); // ADD THIS
+  const { currentTelegramId, isReady } = useTelegram();
 
-  // ADD: Function to check if stored user matches current Telegram user
   const validateUserMatchesTelegram = () => {
     if (!isReady || !currentTelegramId) {
-      console.log('⚠️ Telegram not ready or no ID');
-      return true; // Can't validate, assume ok
+      console.log('⚠️ Telegram not ready or no ID, cannot validate');
+      return true;
     }
 
     const storedUserData = localStorage.getItem('user_data');
     if (!storedUserData) {
       console.log('ℹ️ No stored user data');
-      return true; // No stored user, proceed with login
+      return true;
     }
 
     try {
@@ -88,12 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ADD: Function to force re-authentication
+  // FIX: Call logout API to clear HttpOnly cookie
   const reauthenticate = async () => {
     console.log('🔄 Re-authenticating...');
     
-    // Clear all session data
-    Cookies.remove('auth_token');
+    // Call logout API to clear the HttpOnly cookie
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    
+    // Clear client-side storage
     Cookies.remove('user_data');
     localStorage.removeItem('user_data');
     setUser(null);
@@ -104,16 +108,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // FIX: Only check auth when Telegram is ready
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (isReady) {
+      checkAuth();
+    }
+  }, [isReady, currentTelegramId]);
 
-  // MODIFY: Check auth with validation
   const checkAuth = async () => {
     try {
       console.log('🔍 Checking authentication...');
 
-      // ADD: Validate user matches Telegram
+      // Validate user matches Telegram
       const userMatches = validateUserMatchesTelegram();
       if (!userMatches) {
         console.log('❌ User mismatch detected. Clearing session.');
@@ -130,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         console.log('✅ Existing session found');
         
-        // ADD: Double-check server response matches Telegram
+        // Double-check server response matches Telegram
         if (isReady && currentTelegramId && data.user.telegramId !== currentTelegramId) {
           console.log('❌ Server user mismatch. Re-authenticating.');
           await reauthenticate();
@@ -197,7 +203,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = (userData: User) => {
-    // ADD: Verify user matches Telegram before login
     if (isReady && currentTelegramId && userData.telegramId !== currentTelegramId) {
       console.error('❌ Attempted to login with wrong user');
       return;
@@ -271,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         isAuthenticated: !!user,
         refreshUser,
-        reauthenticate, // ADD THIS
+        reauthenticate,
       }}
     >
       {children}
