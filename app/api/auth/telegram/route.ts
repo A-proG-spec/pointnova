@@ -6,6 +6,16 @@ import { verifyTelegramWebAppData } from '@/lib/auth/telegram';
 
 export const dynamic = 'force-dynamic';
 
+// Helper function to generate a unique referral code
+function generateReferralCode(length = 8) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -80,7 +90,9 @@ export async function POST(request: NextRequest) {
         botToken,
         userData,
         initData
-      ); if (!telegramUser) {
+      );
+      
+      if (!telegramUser) {
         console.log('❌ Invalid Telegram data - verification failed');
         return NextResponse.json(
           { error: 'Invalid Telegram data' },
@@ -134,13 +146,34 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create new user
+      // Generate unique referral code
+      let referralCode = "";
+      let isUnique = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (!isUnique && attempts < maxAttempts) {
+        referralCode = generateReferralCode();
+        const existingUser = await User.findOne({ referralCode });
+        if (!existingUser) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isUnique) {
+        // Fallback: use timestamp + random
+        referralCode = `REF${Date.now().toString(36).toUpperCase()}`;
+      }
+
+      // Create new user with generated referral code
       user = await User.create({
         telegramId: telegramUser.id.toString(),
         username: telegramUser.username,
         firstName: telegramUser.first_name,
         lastName: telegramUser.last_name || '',
         photoUrl: telegramUser.photo_url,
+        referralCode: referralCode,
         balance: 0,
         totalEarned: 0,
         referredBy: referredBy,
@@ -159,6 +192,8 @@ export async function POST(request: NextRequest) {
         });
         await referrerUser.save();
       }
+
+      console.log('✅ New user created with referral code:', referralCode);
 
     } else {
       console.log('👤 Existing user found:', user._id);
