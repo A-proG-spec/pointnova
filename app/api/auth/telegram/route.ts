@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         
         if (referrerUser) {
           referredBy = referralCode;
-          referralBonus = 10;
+          referralBonus = 100;
           
           console.log('📎 Referral code used:', referralCode, 'by user:', referrerUser.username);
           

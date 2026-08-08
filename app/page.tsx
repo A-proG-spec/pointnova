@@ -4,32 +4,110 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { UserCard } from '@/components/ui/UserCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import {
-  TrendingUp,
-  Award,
-  Users,
+import { 
+  TrendingUp, 
+  Award, 
+  Users, 
   Wallet,
   LogOut,
   Coins,
   Clock,
   CheckCircle,
   ArrowUpRight,
-  UserPlus,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 // Dummy Ethiopian users with withdrawal history
 const dummyWithdrawals = [
   {
     id: 1,
-    name: 'Eyob',
+    name: 'Abebe Kebede',
     username: '@abebe_k',
     amount: 12500,
     date: '2026-08-05',
     status: 'completed',
     avatar: 'https://ui-avatars.com/api/?name=Abebe+Kebede&background=10b981&color=fff&size=32',
   },
-  // ... rest of dummy data
+  {
+    id: 2,
+    name: 'Tsion Hailu',
+    username: '@tsion_h',
+    amount: 8700,
+    date: '2026-08-04',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Tsion+Hailu&background=6366f1&color=fff&size=32',
+  },
+  {
+    id: 3,
+    name: 'Biruk Alemu',
+    username: '@biruk_a',
+    amount: 23400,
+    date: '2026-08-03',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Biruk+Alemu&background=f59e0b&color=fff&size=32',
+  },
+  {
+    id: 4,
+    name: 'Meron Getachew',
+    username: '@meron_g',
+    amount: 5600,
+    date: '2026-08-02',
+    status: 'processing',
+    avatar: 'https://ui-avatars.com/api/?name=Meron+Getachew&background=8b5cf6&color=fff&size=32',
+  },
+  {
+    id: 5,
+    name: 'Yonas Tadesse',
+    username: '@yonas_t',
+    amount: 19200,
+    date: '2026-08-01',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Yonas+Tadesse&background=ef4444&color=fff&size=32',
+  },
+  {
+    id: 6,
+    name: 'Selamawit Desta',
+    username: '@selam_d',
+    amount: 4500,
+    date: '2026-07-31',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Selamawit+Desta&background=22c55e&color=fff&size=32',
+  },
+  {
+    id: 7,
+    name: 'Dawit Mulugeta',
+    username: '@dawit_m',
+    amount: 15600,
+    date: '2026-07-30',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Dawit+Mulugeta&background=06b6d4&color=fff&size=32',
+  },
+  {
+    id: 8,
+    name: 'Hanna Tekle',
+    username: '@hanna_t',
+    amount: 7800,
+    date: '2026-07-29',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Hanna+Tekle&background=ec4899&color=fff&size=32',
+  },
+  {
+    id: 9,
+    name: 'Mekdes Wondimu',
+    username: '@mekdes_w',
+    amount: 34200,
+    date: '2026-07-28',
+    status: 'completed',
+    avatar: 'https://ui-avatars.com/api/?name=Mekdes+Wondimu&background=14b8a6&color=fff&size=32',
+  },
+  {
+    id: 10,
+    name: 'Henok Amanuel',
+    username: '@henok_a',
+    amount: 2100,
+    date: '2026-07-27',
+    status: 'processing',
+    avatar: 'https://ui-avatars.com/api/?name=Henok+Amanuel&background=8b5cf6&color=fff&size=32',
+  },
 ];
 
 // Summary statistics
@@ -43,27 +121,6 @@ const withdrawalStats = {
 export default function HomePage() {
   const { user, loading, logout, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [referralCount, setReferralCount] = useState(0);
-  const [referralEarnings, setReferralEarnings] = useState(0);
-
-  useEffect(() => {
-    if (user) {
-      fetchReferralStats();
-    }
-  }, [user]);
-
-  const fetchReferralStats = async () => {
-    try {
-      const response = await fetch(`/api/referral?userId=${user?.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setReferralCount(data.referralCount || 0);
-        setReferralEarnings(data.referralEarnings || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching referral stats:', error);
-    }
-  };
 
   if (loading) {
     return <LoadingSpinner text="Loading your profile..." />;
@@ -79,7 +136,7 @@ export default function HomePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Welcome, {user.firstName} 👋
+            Welcome, {user.firstName}
           </h1>
           <p className="text-white/60 text-sm">Let's earn some rewards!</p>
         </div>
@@ -104,7 +161,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* User Card */}
+      {/* User Card - FIXED: Added totalEarned to fix TypeScript error */}
       <UserCard
         firstName={user.firstName}
         lastName={user.lastName}
@@ -113,32 +170,30 @@ export default function HomePage() {
         totalEarned={user.totalEarned}
         telegramId={user.telegramId}
         variant="detailed"
-        showStats={true}
+        showStats={false}
       />
 
-      {/* Quick Stats - ADD REFERRAL STATS */}
-      <div className="grid grid-cols-3 gap-2 mt-4 mb-6">
-        <div className="bg-[#1a1a1a] rounded-2xl p-3 border border-white/5 text-center">
-          <Users className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-          <p className="text-white/40 text-[10px]">Referrals</p>
-          <p className="text-white font-bold text-lg">{referralCount}</p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl p-3 border border-white/5 text-center">
-          <Coins className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-          <p className="text-white/40 text-[10px]">From Referrals</p>
-          <p className="text-emerald-400 font-bold text-lg">{referralEarnings} ETB</p>
-        </div>
-        <div className="bg-[#1a1a1a] rounded-2xl p-3 border border-white/5 text-center">
-          <TrendingUp className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
-          <p className="text-white/40 text-[10px]">Available Tasks</p>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-3 mt-4 mb-6">
+        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
+          <p className="text-white/40 text-xs mb-1">Available Tasks</p>
           <p className="text-white font-bold text-lg">5</p>
+          <p className="text-white/20 text-xs mt-1">Ready to complete</p>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
+          <p className="text-white/40 text-xs mb-1">Total Earned</p>
+          <p className="text-emerald-400 font-bold text-lg">{user.totalEarned} ETB</p>
+          <p className="text-white/20 text-xs mt-1">Lifetime earnings</p>
         </div>
       </div>
 
       {/* Withdrawal Activity Section */}
-      <div className="mt-2 mb-6">
+      <div className="mt-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-white">💰 Recent Withdrawals</h2>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-emerald-400" />
+            Recent Withdrawals
+          </h2>
           <button 
             onClick={() => router.push('/withdraw')}
             className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
@@ -147,31 +202,37 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Withdrawal Stats */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-[#1a1a1a] rounded-xl p-3 border border-white/5 text-center">
-            <p className="text-white/40 text-[10px]">Total Withdrawn</p>
-            <p className="text-emerald-400 font-bold text-sm">
+        {/* Withdrawal Stats - 4 columns */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="bg-[#1a1a1a] rounded-xl p-2.5 border border-white/5 text-center">
+            <p className="text-white/40 text-[9px]">Total</p>
+            <p className="text-emerald-400 font-bold text-xs">
               {withdrawalStats.totalWithdrawn.toLocaleString()} ETB
             </p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl p-3 border border-white/5 text-center">
-            <p className="text-white/40 text-[10px]">Avg Amount</p>
-            <p className="text-yellow-400 font-bold text-sm">
+          <div className="bg-[#1a1a1a] rounded-xl p-2.5 border border-white/5 text-center">
+            <p className="text-white/40 text-[9px]">Highest</p>
+            <p className="text-yellow-400 font-bold text-xs">
+              {withdrawalStats.highestWithdrawal.toLocaleString()} ETB
+            </p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-2.5 border border-white/5 text-center">
+            <p className="text-white/40 text-[9px]">Avg</p>
+            <p className="text-blue-400 font-bold text-xs">
               {withdrawalStats.averageAmount.toLocaleString()} ETB
             </p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl p-3 border border-white/5 text-center">
-            <p className="text-white/40 text-[10px]">Highest</p>
-            <p className="text-purple-400 font-bold text-sm">
-              {withdrawalStats.highestWithdrawal.toLocaleString()} ETB
+          <div className="bg-[#1a1a1a] rounded-xl p-2.5 border border-white/5 text-center">
+            <p className="text-white/40 text-[9px]">Users</p>
+            <p className="text-white font-bold text-xs">
+              {withdrawalStats.totalUsers}
             </p>
           </div>
         </div>
 
-        {/* Withdrawal List */}
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
-          {dummyWithdrawals.slice(0, 5).map((withdrawal) => (
+        {/* Withdrawal List - Shows ALL dummy data */}
+        <div className="space-y-2 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+          {dummyWithdrawals.map((withdrawal) => (
             <div
               key={withdrawal.id}
               className="bg-[#1a1a1a] rounded-xl p-3 border border-white/5 hover:border-white/10 transition-all"
