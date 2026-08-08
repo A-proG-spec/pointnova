@@ -10,6 +10,7 @@ export interface User {
   referredBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  completedTasks?: string[]; // Add this
 }
 
 export interface Task {
@@ -35,4 +36,11 @@ export interface TelegramUser {
   photo_url?: string;
   auth_date: number;
   hash: string;
+}
+
+// Add Monetag SDK type declaration
+declare global {
+  interface Window {
+    show_11526637: (options: { type: string; requestVar?: string }) => Promise<void>;
+  }
 }

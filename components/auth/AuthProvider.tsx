@@ -16,6 +16,7 @@ interface User {
   totalEarned: number;
   referralCode: string;
   referredBy?: string;
+  completedTasks?: string[];
   referrals?: {
     userId: string;
     username: string;

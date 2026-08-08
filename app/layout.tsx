@@ -35,8 +35,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} dark`}>
       <head>
+        {/* Telegram WebApp SDK */}
         <script 
           src="https://telegram.org/js/telegram-web-app.js" 
+          async
+        />
+        {/* Monetag SDK - ADD THIS */}
+        <script 
+          src="//libtl.com/sdk.js" 
+          data-zone="11526637" 
+          data-sdk="show_11526637"
           async
         />
       </head>

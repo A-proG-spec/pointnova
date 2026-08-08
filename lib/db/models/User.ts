@@ -42,6 +42,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
+    // Track completed ad tasks
+    completedTasks: {
+      type: [String],
+      default: [],
+    },
     // Track referral earnings
     referralEarnings: {
       type: Number,
@@ -52,7 +57,7 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // Add referral history (optional - for detailed tracking)
+    // Add referral history
     referralHistory: [
       {
         userId: {
