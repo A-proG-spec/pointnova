@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
     const miniAppName = process.env.NEXT_PUBLIC_APP_NAME || "Pointnova";
 
     // Build the referral link
-    const referralLink =
-      `https://t.me/${botUsername}/${miniAppName}?startapp=ref_${user.referralCode}`;
+    const referralLink =  `https://t.me/${botUsername}?startapp=ref_${user.referralCode}`;
 
     // Count total referrals
     const referralCount = await User.countDocuments({ referredBy: user.referralCode });

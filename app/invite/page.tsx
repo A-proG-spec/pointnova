@@ -11,6 +11,7 @@ interface ReferralData {
   referralCode: string;
   referralLink: string;
   referralCount: number;
+  referralEarnings: number; // ADD THIS - actual earnings from database
   referrals: {
     userId: string;
     username: string;
@@ -66,10 +67,12 @@ export default function InvitePage() {
   const handleShare = async () => {
     if (webApp) {
       try {
-        webApp.sendData(JSON.stringify({
-          type: 'share',
-          text: `🚀 Join PointNova and start earning rewards! Use my referral link: ${referralData?.referralLink}`,
-        }));
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
+          referralData?.referralLink || ''
+        )}&text=${encodeURIComponent(
+          '🚀 Join PointNova and start earning rewards!'
+        )}`;
+        webApp.openTelegramLink(shareUrl);
         return;
       } catch (error) {
         console.error('Telegram share error:', error);
@@ -94,7 +97,9 @@ export default function InvitePage() {
     return <LoadingSpinner text="Loading referral details..." />;
   }
 
-  const totalEarnedFromReferrals = (referralData?.referralCount || 0) * REFERRAL_REWARD;
+  // FIX: Use actual referralEarnings from database, not calculated
+  const totalReferralEarnings = referralData?.referralEarnings || 0;
+  const referralCount = referralData?.referralCount || 0;
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24 text-white">
@@ -116,19 +121,19 @@ export default function InvitePage() {
           </div>
           <h2 className="text-xl font-bold text-white">Invite & Earn</h2>
           <p className="text-white/60 text-sm">
-            Share your link and earn {REFERRAL_REWARD} ETB for every friend who joins!
+            Share your link and earn <span className="text-emerald-500 font-bold">{REFERRAL_REWARD} ETB</span> for every friend who joins!
           </p>
         </div>
 
-        {/* Stats Overview */}
+        {/* Stats Overview - FIXED: Use actual referralEarnings */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-black/50 rounded-xl p-3 text-center border border-white/5">
             <p className="text-white/40 text-xs">Total Referrals</p>
-            <p className="text-emerald-500 font-bold text-xl">{referralData?.referralCount || 0}</p>
+            <p className="text-emerald-500 font-bold text-xl">{referralCount}</p>
           </div>
           <div className="bg-black/50 rounded-xl p-3 text-center border border-white/5">
             <p className="text-white/40 text-xs">Total Earned</p>
-            <p className="text-emerald-500 font-bold text-xl">{totalEarnedFromReferrals} ETB</p>
+            <p className="text-emerald-500 font-bold text-xl">{totalReferralEarnings} ETB</p>
           </div>
         </div>
 
@@ -146,7 +151,7 @@ export default function InvitePage() {
           </div>
         </div>
 
-        {/* CHANGED: Referral Code → Referral Link */}
+        {/* Referral Link */}
         <div className="bg-black/50 rounded-xl p-3 mb-4 border border-white/5">
           <div className="flex items-center gap-2 mb-2">
             <Link2 className="w-4 h-4 text-blue-400" />
