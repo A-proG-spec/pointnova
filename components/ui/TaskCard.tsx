@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 const TIMER_DURATION = 30; // 30 seconds
 
 interface TaskCardProps {
-  id: string;
+  id: string; // MongoDB ObjectId as string
   title: string;
   reward: number;
   isCompleted?: boolean;
@@ -72,10 +72,10 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
         throw new Error('Ad SDK not loaded. Please try again.');
       }
 
-      // Call Monetag SDK with popup type
+      // Call Monetag SDK with the task ID
       await window.show_11526637({ 
         type: 'pop',
-        requestVar: id // Track which task was clicked
+        requestVar: id // Pass task ID to track which ad was viewed
       });
 
       // If we reach here, popup opened successfully
@@ -98,15 +98,14 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
       setIsClaiming(true);
       setStatus('loading');
 
-      // Call reward API
+      // Call reward API with task ID
       const response = await fetch('/api/user/reward', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: reward,
-          taskId: id,
+          taskId: id, // Send the MongoDB task ID
         }),
       });
 
@@ -151,7 +150,7 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
     switch (status) {
       case 'idle':
         return {
-          text: '▶ Play',
+          text: '▶ Watch Ad',
           color: 'bg-emerald-400 hover:bg-emerald-300 text-black',
           disabled: false,
           onClick: handlePlay,
@@ -193,7 +192,7 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
         };
       default:
         return {
-          text: '▶ Play',
+          text: '▶ Watch Ad',
           color: 'bg-emerald-400 hover:bg-emerald-300 text-black',
           disabled: false,
           onClick: handlePlay,

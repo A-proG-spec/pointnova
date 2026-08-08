@@ -2,23 +2,16 @@ import mongoose from 'mongoose';
 
 const TaskSchema = new mongoose.Schema(
   {
-    title: {
+    name: {
       type: String,
       required: true,
-    },
-    description: {
-      type: String,
-      required: true,
+      default: 'Watch Ad',
     },
     reward: {
       type: Number,
       default: 25,
       min: 25,
       max: 25,
-    },
-    url: {
-      type: String,
-      required: true,
     },
     isActive: {
       type: Boolean,
