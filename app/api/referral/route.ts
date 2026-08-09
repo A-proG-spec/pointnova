@@ -3,14 +3,11 @@ import dbConnect from '@/lib/db/mongoose';
 import User from '@/lib/db/models/User';
 import { verifyToken } from '@/lib/auth/jwt';
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // For production: Get user from JWT token instead of query param
     const token = request.cookies.get('auth_token')?.value;
-    
     let userId: string | null = null;
     
     if (token) {
@@ -20,46 +17,41 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback to query param (for development/testing)
     if (!userId) {
       const searchParams = request.nextUrl.searchParams;
       userId = searchParams.get('userId');
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
     await dbConnect();
-
     const user = await User.findById(userId);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "pointnovaEarn_bot";
-    const miniAppName = process.env.NEXT_PUBLIC_APP_NAME || "Pointnova";
+    const referralLink = `https://t.me/${botUsername}?startapp=ref_${user.referralCode}`;
 
-    // Build the referral link
-    const referralLink =  `https://t.me/${botUsername}?startapp=ref_${user.referralCode}`;
-
-    // Count total referrals
-    const referralCount = await User.countDocuments({ referredBy: user.referralCode });
-
-    // Get full referral details with populated user data
+    // Dynamically find all users referred by this user
     const referrals = await User.find(
       { referredBy: user.referralCode },
       'telegramId username firstName lastName photoUrl createdAt'
-    ).lean();
+    ).sort({ createdAt: -1 }).lean();
 
-    // Format referral data
+    const referralCount = referrals.length;
+    
+    // Constant matches the frontend REFERRAL_REWARD
+    const REFERRAL_REWARD = 100;
+    
+    // Calculate earnings dynamically or use database field if tracked properly
+    // Fallback to calculation if database field is 0 but referrals exist
+    const calculatedEarnings = referralCount * REFERRAL_REWARD;
+    const actualEarnings = user.referralEarnings > 0 ? user.referralEarnings : calculatedEarnings;
+
     const formattedReferrals = referrals.map((ref: any) => ({
       userId: ref._id,
       telegramId: ref.telegramId,
@@ -76,16 +68,12 @@ export async function GET(request: NextRequest) {
       referralLink,
       referralCount,
       referrals: formattedReferrals,
-      // Also return user's referral earnings (if you track them)
-      referralEarnings: user.referralEarnings || 0,
+      referralEarnings: actualEarnings,
     });
   } catch (error) {
     console.error('❌ Referral fetch error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch referral data',
-        details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined
-      },
+      { error: 'Failed to fetch referral data' },
       { status: 500 }
     );
   }

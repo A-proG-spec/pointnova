@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, Share2, Users, ArrowLeft, Check, UserPlus, Coins, Link2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -11,7 +11,7 @@ interface ReferralData {
   referralCode: string;
   referralLink: string;
   referralCount: number;
-  referralEarnings: number; // ADD THIS - actual earnings from database
+  referralEarnings: number;
   referrals: {
     userId: string;
     username: string;
@@ -29,28 +29,27 @@ export default function InvitePage() {
   const [copied, setCopied] = useState(false);
   const REFERRAL_REWARD = 100;
 
-  useEffect(() => {
-    if (user) {
-      fetchReferralData();
-    }
-  }, [user]);
-
-  const fetchReferralData = async () => {
+  const fetchReferralData = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      const response = await fetch(`/api/referral?userId=${user?.id}`);
+      setLoading(true);
+      const response = await fetch(`/api/referral?userId=${user.id}`);
       if (response.ok) {
         const data = await response.json();
         setReferralData(data);
-        
-        // Refresh user data to update balance
-        await refreshUser();
+        await refreshUser(); // Sync balance
       }
     } catch (error) {
       console.error('Error fetching referral data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, refreshUser]);
+
+  useEffect(() => {
+    fetchReferralData();
+  }, [fetchReferralData]);
 
   const handleCopy = async () => {
     if (referralData?.referralLink) {
@@ -65,13 +64,11 @@ export default function InvitePage() {
   };
 
   const handleShare = async () => {
-    if (webApp) {
+    if (webApp && referralData?.referralLink) {
       try {
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
-          referralData?.referralLink || ''
-        )}&text=${encodeURIComponent(
-          '🚀 Join PointNova and start earning rewards!'
-        )}`;
+          referralData.referralLink
+        )}&text=${encodeURIComponent('🚀 Join PointNova and start earning rewards!')}`;
         webApp.openTelegramLink(shareUrl);
         return;
       } catch (error) {
@@ -93,11 +90,10 @@ export default function InvitePage() {
     }
   };
 
-  if (loading) {
+  if (loading && !referralData) {
     return <LoadingSpinner text="Loading referral details..." />;
   }
 
-  // FIX: Use actual referralEarnings from database, not calculated
   const totalReferralEarnings = referralData?.referralEarnings || 0;
   const referralCount = referralData?.referralCount || 0;
 
@@ -125,7 +121,6 @@ export default function InvitePage() {
           </p>
         </div>
 
-        {/* Stats Overview - FIXED: Use actual referralEarnings */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-black/50 rounded-xl p-3 text-center border border-white/5">
             <p className="text-white/40 text-xs">Total Referrals</p>
@@ -137,7 +132,6 @@ export default function InvitePage() {
           </div>
         </div>
 
-        {/* Current Balance */}
         <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-xl p-3 mb-4 border border-emerald-500/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -151,7 +145,6 @@ export default function InvitePage() {
           </div>
         </div>
 
-        {/* Referral Link */}
         <div className="bg-black/50 rounded-xl p-3 mb-4 border border-white/5">
           <div className="flex items-center gap-2 mb-2">
             <Link2 className="w-4 h-4 text-blue-400" />
@@ -159,25 +152,24 @@ export default function InvitePage() {
           </div>
           <div className="bg-black/30 rounded-lg p-2.5 mb-2">
             <p className="text-white/80 text-xs break-all font-mono">
-              {referralData?.referralLink}
+              {referralData?.referralLink || 'Generating link...'}
             </p>
           </div>
           <div className="flex items-center justify-between">
             <p className="text-white/20 text-[10px]">Share this link with friends</p>
             <span className="text-white/20 text-[10px] bg-white/5 px-2 py-0.5 rounded-full">
-              {referralData?.referralCode}
+              {referralData?.referralCode || '...'}
             </span>
           </div>
         </div>
 
-        {/* Invited Users List */}
         <div className="bg-black/50 rounded-xl p-3 mb-4 border border-white/5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-white/40 text-xs font-semibold">Invited Friends</p>
-            <span className="text-white/20 text-[10px]">{referralData?.referrals?.length || 0} invited</span>
+            <span className="text-white/20 text-[10px]">{referralCount} invited</span>
           </div>
           
-          {referralData?.referrals?.length === 0 ? (
+          {referralCount === 0 ? (
             <div className="text-center py-4">
               <UserPlus className="w-6 h-6 text-white/20 mx-auto mb-2" />
               <p className="text-white/30 text-xs">No invited users yet</p>
@@ -213,11 +205,11 @@ export default function InvitePage() {
           )}
         </div>
 
-        {/* Action Buttons */}
         <div className="space-y-2.5">
           <button
             onClick={handleCopy}
-            className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all border border-white/10"
+            disabled={!referralData?.referralLink}
+            className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all border border-white/10 disabled:opacity-50"
           >
             {copied ? (
               <>
@@ -234,7 +226,8 @@ export default function InvitePage() {
           
           <button
             onClick={handleShare}
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+            disabled={!referralData?.referralLink}
+            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
             <Share2 className="w-4 h-4" />
             <span>Share Link</span>
@@ -242,7 +235,6 @@ export default function InvitePage() {
         </div>
       </div>
 
-      {/* How it works */}
       <div className="mt-4 bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
         <h3 className="text-white font-semibold text-sm mb-2">How it works</h3>
         <div className="space-y-2 text-white/60 text-xs">

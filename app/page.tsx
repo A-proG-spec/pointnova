@@ -177,7 +177,7 @@ export default function HomePage() {
       <div className="grid grid-cols-2 gap-3 mt-4 mb-6">
         <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
           <p className="text-white/40 text-xs mb-1">Available Tasks</p>
-          <p className="text-white font-bold text-lg">5</p>
+          <p className="text-white font-bold text-lg">100</p>
           <p className="text-white/20 text-xs mt-1">Ready to complete</p>
         </div>
         <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
@@ -198,7 +198,7 @@ export default function HomePage() {
             onClick={() => router.push('/withdraw')}
             className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
           >
-            View All <ArrowUpRight className="w-3 h-3" />
+            withdraw <ArrowUpRight className="w-3 h-3" />
           </button>
         </div>
 
