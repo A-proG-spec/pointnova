@@ -30,8 +30,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-    // ADD: Get current Telegram user from request (if available)
-    // This adds an extra layer of validation
     const telegramInitData = request.cookies.get('telegram_user')?.value;
     if (telegramInitData) {
       try {
@@ -59,6 +57,7 @@ export async function GET(request: NextRequest) {
         totalEarned: user.totalEarned,
         referralCode: user.referralCode,
         referredBy: user.referredBy,
+        completedTasks: user.completedTasks || [], // Added completedTasks
       }
     });
   } catch (error) {

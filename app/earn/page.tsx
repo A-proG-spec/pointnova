@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Coins } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 interface Task {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   reward: number;
 }
@@ -41,17 +42,17 @@ export default function EarnPage() {
     fetchTasks();
   }, []);
 
-  // Update completed tasks when user data changes
+  // Update completed tasks state whenever user data updates
   useEffect(() => {
-    if (user) {
-      setCompletedTaskIds(user.completedTasks || []);
+    if (user && Array.isArray(user.completedTasks)) {
+      setCompletedTaskIds(user.completedTasks);
     }
   }, [user]);
 
   const handleTaskComplete = async (taskId: string) => {
-    // Add to completed list locally
-    setCompletedTaskIds((prev) => [...prev, taskId]);
-    // Refresh user data from server
+    // Add locally to give immediate UI response
+    setCompletedTaskIds((prev) => Array.from(new Set([...prev, taskId])));
+    // Sync user state from MongoDB
     await refreshUser();
   };
 
@@ -76,7 +77,7 @@ export default function EarnPage() {
         <h1 className="text-xl font-bold tracking-tight">Earn Points</h1>
       </div>
 
-      {/* User Stats */}
+      {/* User Stats Card */}
       <div className="bg-zinc-950 rounded-xl p-4 border border-zinc-900 mb-5">
         <div className="flex items-center justify-between">
           <div>
@@ -96,7 +97,7 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* Task List - Dynamic from Database */}
+      {/* Task List */}
       {tasks.length === 0 ? (
         <div className="text-center py-10 bg-zinc-950 rounded-xl border border-zinc-900">
           <p className="text-zinc-400 text-sm">No tasks available right now.</p>
@@ -104,20 +105,23 @@ export default function EarnPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              id={task.id}
-              title={task.name}
-              reward={task.reward}
-              isCompleted={completedTaskIds.includes(task.id)}
-              onComplete={handleTaskComplete}
-            />
-          ))}
+          {tasks.map((task) => {
+            const taskId = (task.id || task._id)?.toString() || '';
+            return (
+              <TaskCard
+                key={taskId}
+                id={taskId}
+                title={task.name}
+                reward={task.reward}
+                isCompleted={completedTaskIds.includes(taskId)}
+                onComplete={handleTaskComplete}
+              />
+            );
+          })}
         </div>
       )}
 
-      {/* All tasks completed message */}
+      {/* All Completed Banner */}
       {totalTasks > 0 && allCompleted && (
         <div className="mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
           <p className="text-emerald-400 text-sm font-semibold">🎉 All tasks completed!</p>

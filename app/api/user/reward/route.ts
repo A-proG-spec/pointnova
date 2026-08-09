@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
     
     await dbConnect();
     
-    // Get the task to verify it exists and get reward amount
     const task = await Task.findById(taskId);
     if (!task) {
       return NextResponse.json(
@@ -61,12 +60,10 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Ensure completedTasks array exists
     if (!user.completedTasks) {
       user.completedTasks = [];
     }
     
-    // Check if user already completed this task
     const taskIdString = taskId.toString();
     if (user.completedTasks.includes(taskIdString)) {
       return NextResponse.json(
@@ -75,10 +72,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Mark task as completed
     user.completedTasks.push(taskIdString);
     
-    // Add reward
     const rewardAmount = task.reward || 25;
     user.balance = (user.balance || 0) + rewardAmount;
     user.totalEarned = (user.totalEarned || 0) + rewardAmount;
