@@ -7,42 +7,61 @@ import { TaskCard } from '@/components/ui/TaskCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/components/auth/AuthProvider';
 
-// Generate tasks dynamically using Array.from
-const TASK_COUNT = 5;
-const REWARD_AMOUNT = 25;
-
-const TASKS = Array.from({ length: TASK_COUNT }, (_, index) => ({
-  id: `ad_${index + 1}`,
-  title: 'Watch Ad',
-  reward: REWARD_AMOUNT,
-}));
+interface Task {
+  id: string;
+  name: string;
+  reward: number;
+}
 
 export default function EarnPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
+
+  // Fetch tasks from database
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+      } else {
+        console.error('Failed to fetch tasks');
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  // Update completed tasks when user data changes
+  useEffect(() => {
     if (user) {
-      setCompletedTasks(user.completedTasks || []);
+      setCompletedTaskIds(user.completedTasks || []);
     }
-    setLoading(false);
   }, [user]);
 
   const handleTaskComplete = async (taskId: string) => {
+    // Add to completed list locally
+    setCompletedTaskIds((prev) => [...prev, taskId]);
+    // Refresh user data from server
     await refreshUser();
-    setCompletedTasks((prev) => [...prev, taskId]);
   };
 
   if (loading) {
-    return <LoadingSpinner text="Loading..." />;
+    return <LoadingSpinner text="Loading tasks..." />;
   }
 
-  // Calculate progress
-  const completedCount = completedTasks.length;
-  const totalTasks = TASKS.length;
-  const allCompleted = completedCount === totalTasks;
+  const completedCount = completedTaskIds.length;
+  const totalTasks = tasks.length;
+  const allCompleted = totalTasks > 0 && completedCount === totalTasks;
 
   return (
     <div className="min-h-screen bg-black p-4 pb-20 text-white">
@@ -70,27 +89,36 @@ export default function EarnPage() {
           </div>
           <div className="text-right">
             <p className="text-zinc-400 text-xs">Tasks Done</p>
-            <p className="text-blue-400 font-bold text-xl">{completedCount}/{totalTasks}</p>
+            <p className="text-blue-400 font-bold text-xl">
+              {completedCount}/{totalTasks}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Task List - Using map to render all tasks */}
-      <div className="space-y-3">
-        {TASKS.map((task) => (
-          <TaskCard
-            key={task.id}
-            id={task.id}
-            title={task.title}
-            reward={task.reward}
-            isCompleted={completedTasks.includes(task.id)}
-            onComplete={handleTaskComplete}
-          />
-        ))}
-      </div>
+      {/* Task List - Dynamic from Database */}
+      {tasks.length === 0 ? (
+        <div className="text-center py-10 bg-zinc-950 rounded-xl border border-zinc-900">
+          <p className="text-zinc-400 text-sm">No tasks available right now.</p>
+          <p className="text-zinc-500 text-xs mt-1">Check back later for new tasks!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              id={task.id}
+              title={task.name}
+              reward={task.reward}
+              isCompleted={completedTaskIds.includes(task.id)}
+              onComplete={handleTaskComplete}
+            />
+          ))}
+        </div>
+      )}
 
       {/* All tasks completed message */}
-      {allCompleted && (
+      {totalTasks > 0 && allCompleted && (
         <div className="mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
           <p className="text-emerald-400 text-sm font-semibold">🎉 All tasks completed!</p>
           <p className="text-zinc-400 text-xs mt-1">Come back tomorrow for more opportunities</p>

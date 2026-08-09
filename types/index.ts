@@ -10,15 +10,21 @@ export interface User {
   referredBy?: string;
   createdAt: Date;
   updatedAt: Date;
-  completedTasks?: string[]; // Add this
+  completedTasks: string[]; // Array of task IDs (MongoDB ObjectIds)
+  referralEarnings: number;
+  referralCount: number;
+  referralHistory: {
+    userId: string;
+    joinedAt: Date;
+    reward: number;
+  }[];
 }
 
 export interface Task {
   _id?: string;
-  title: string;
-  description: string;
+  name: string;
   reward: number;
-  url: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
