@@ -38,9 +38,12 @@ export interface TelegramUser {
   hash: string;
 }
 
-// Add Monetag SDK type declaration
 declare global {
   interface Window {
-    show_11526637: (options: { type: string; requestVar?: string }) => Promise<void>;
+    show_11526637?: (
+      options?: string | { type?: string; ymid?: string; requestVar?: string }
+    ) => Promise<void>;
   }
 }
+
+export {};

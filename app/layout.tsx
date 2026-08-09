@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Outfit } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { TelegramProvider } from '@/components/telegram/TelegramProvider';
@@ -36,16 +37,16 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} dark`}>
       <head>
         {/* Telegram WebApp SDK */}
-        <script 
+        <Script 
           src="https://telegram.org/js/telegram-web-app.js" 
-          async
+          strategy="beforeInteractive"
         />
-        {/* Monetag SDK - ADD THIS */}
-        <script 
-          src="//libtl.com/sdk.js" 
+        {/* Monetag SDK - Using Next Script for optimal client execution */}
+        <Script 
+          src="https://libtl.com/sdk.js" 
           data-zone="11526637" 
           data-sdk="show_11526637"
-          async
+          strategy="afterInteractive"
         />
       </head>
       <body className={`${outfit.className} min-h-screen bg-black antialiased`}>

@@ -24,14 +24,14 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Check if task is already completed
+  // Sync completion status from parent
   useEffect(() => {
     if (isCompleted) {
       setStatus('completed');
     }
   }, [isCompleted]);
 
-  // Cleanup timer on unmount
+  // Cleanup timer interval on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -67,24 +67,20 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
     try {
       setStatus('loading');
 
-      // Check if Monetag SDK is available
-      if (typeof window === 'undefined' || !window.show_11526637) {
-        throw new Error('Ad SDK not loaded. Please try again.');
+      // Check if Monetag SDK is initialized on the window
+      if (typeof window === 'undefined' || typeof window.show_11526637 !== 'function') {
+        throw new Error('Ad engine is initializing. Please try again in a few seconds.');
       }
 
-      // Call Monetag SDK with popup type
-      await window.show_11526637({ 
-        type: 'pop',
-        requestVar: id // Track which task was clicked
-      });
+      // Call Monetag SDK with 'pop' parameter directly
+      await window.show_11526637('pop');
 
-      // If we reach here, popup opened successfully
-      // Start the timer for user to view the ad
+      // Trigger local viewing countdown upon successful popup release
       startTimer();
 
     } catch (error) {
       console.error('❌ Ad error:', error);
-      setStatus('idle');
+      setStatus('error');
       
       const errorMessage = error instanceof Error ? error.message : 'Failed to open ad. Please allow popups and try again.';
       showToast(errorMessage, 'error');
@@ -96,9 +92,8 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
 
     try {
       setIsClaiming(true);
-      setStatus('loading');
 
-      // Call reward API
+      // Execute backend reward endpoint
       const response = await fetch('/api/user/reward', {
         method: 'POST',
         headers: {
@@ -116,14 +111,12 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
         throw new Error(data.error || 'Failed to claim reward');
       }
 
-      // Success!
+      // Mark completed & update UI state
       setStatus('completed');
       showToast(`🎉 +${reward} ETB earned!`, 'success');
       
-      // Refresh user data
       await refreshUser();
       
-      // Notify parent
       if (onComplete) {
         onComplete(id);
       }
@@ -137,7 +130,6 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
     }
   };
 
-  // Reset task (if error occurs)
   const handleRetry = () => {
     setStatus('idle');
     setTimer(TIMER_DURATION);
@@ -146,7 +138,6 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
     }
   };
 
-  // Get button state
   const getButtonConfig = () => {
     switch (status) {
       case 'idle':
@@ -205,14 +196,13 @@ export function TaskCard({ id, title, reward, isCompleted = false, onComplete }:
 
   return (
     <>
-      {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 left-4 right-4 z-50 p-3 rounded-xl animate-slide-down ${
-          toast.type === 'error' ? 'bg-red-500/90' :
-          toast.type === 'success' ? 'bg-emerald-500/90' :
-          'bg-blue-500/90'
+        <div className={`fixed top-4 left-4 right-4 z-50 p-3 rounded-xl transition-all ${
+          toast.type === 'error' ? 'bg-red-500/90 text-white' :
+          toast.type === 'success' ? 'bg-emerald-500/90 text-white' :
+          'bg-blue-500/90 text-white'
         }`}>
-          <p className="text-white text-center text-sm font-semibold">{toast.message}</p>
+          <p className="text-center text-sm font-semibold">{toast.message}</p>
         </div>
       )}
 
